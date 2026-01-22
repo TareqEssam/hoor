@@ -413,7 +413,7 @@ class AssistantUIV2 {
         } else {
             this.openWindow();
         }
-    }
+   
         // استعادة الإعدادات
         this.restoreSettings();
         
@@ -1446,6 +1446,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.smartAssistantUI = new AssistantUIV2();
     window.assistantUI = window.smartAssistantUI; // للتوافق
 });
+
 
 
 
