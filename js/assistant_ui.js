@@ -1,0 +1,866 @@
+/****************************************************************************
+ * 🎨 Assistant UI V2 - الواجهة التفاعلية المحسنة لمحرك الربط الذكي V14
+ * ════════════════════════════════════════════════════════════════════════════
+ * ✅ متوافق كلياً مع Smart Assistant V14 + DataLinkingEngine
+ * ✅ عرض معلومات الربط الذكي والتوصيات الاستنتاجية
+ * ✅ دعم البدائل المتعددة والتأكيدات
+ * ✅ إحصائيات أداء متقدمة
+ * ✅ نظام ملاحظات ذكية
+ ****************************************************************************/
+
+class AssistantUIV2 {
+    constructor() {
+        // المكونات الأساسية
+        this.voice = null;
+        this.formatter = null;
+        
+        // عناصر DOM
+        this.elements = {};
+        
+        // الحالة
+        this.isOpen = false;
+        this.isMinimized = false;
+        this.currentMode = 'text';
+        this.currentAssistant = null;
+        
+        // الإعدادات
+        this.settings = {
+            autoScroll: true,
+            soundEffects: true,
+            showLinkingInfo: true,
+            showConfidence: true,
+            darkMode: false
+        };
+        
+        // السياق
+        this.context = {
+            lastQuery: null,
+            lastResponse: null,
+            conversationDepth: 0,
+            awaitingConfirmation: false,
+            currentAlternatives: []
+        };
+        
+        this.initialize();
+    }
+    
+    // ==================== التهيئة المتقدمة ====================
+    async initialize() {
+        try {
+            console.log('🚀 Assistant UI V2 - التهيئة للربط الذكي...');
+            
+            // إنشاء عناصر الواجهة
+            this.createEnhancedUI();
+            
+            // تهيئة المكونات
+            await this.initializeComponents();
+            
+            // ربط الأحداث
+            this.bindEnhancedEvents();
+            
+            // البحث عن المساعد الذكي المناسب
+            this.detectAssistant();
+            
+            // عرض رسالة ترحيب ذكية
+            this.showSmartWelcome();
+            
+            console.log('✅ واجهة المساعد UI V2 جاهزة للربط الذكي');
+            
+        } catch (error) {
+            console.error('❌ فشل تهيئة الواجهة:', error);
+            this.createFallbackUI();
+        }
+    }
+    
+    // ==================== الكشف الذكي عن المساعد ====================
+    detectAssistant() {
+        // البحث عن أفضل نسخة متاحة
+        if (window.finalAssistantV14) {
+            this.currentAssistant = window.finalAssistantV14;
+            console.log('🤖 تم الكشف عن المساعد V14');
+        } else if (window.smartAssistant && window.smartAssistant.linkingEnabled) {
+            this.currentAssistant = window.smartAssistant;
+            console.log('🤖 تم الكشف عن المساعد V14 (smartAssistant)');
+        } else if (window.finalAssistantV13) {
+            this.currentAssistant = window.finalAssistantV13;
+            console.log('🤖 تم الكشف عن المساعد V13 (بدون ربط ذكي)');
+        } else {
+            console.warn('⚠️ لم يتم العثور على مساعد ذكي نشط');
+            this.showAssistantWarning();
+        }
+    }
+    
+    // ==================== إنشاء واجهة محسنة ====================
+    createEnhancedUI() {
+        // الأيقونة العائمة الذكية
+        const fab = document.createElement('div');
+        fab.id = 'smart-assistant-fab';
+        fab.className = 'smart-assistant-fab';
+        fab.innerHTML = `
+            <div class="fab-icon">
+                <i class="fas fa-brain"></i>
+                <span class="fab-badge" id="linking-badge"></span>
+            </div>
+            <div class="fab-pulse"></div>
+            <div class="fab-tooltip">المساعد الذكي V14</div>
+        `;
+        document.body.appendChild(fab);
+        this.elements.fab = fab;
+        
+        // نافذة المحادثة المتقدمة
+        const chatWindow = document.createElement('div');
+        chatWindow.id = 'smart-assistant-window';
+        chatWindow.className = 'smart-assistant-window';
+        chatWindow.innerHTML = this.createEnhancedWindowHTML();
+        document.body.appendChild(chatWindow);
+        this.elements.window = chatWindow;
+        
+        // تخزين المراجع
+        this.cacheDOMReferences();
+    }
+    
+    createEnhancedWindowHTML() {
+        return `
+            <div class="smart-chat-header">
+                <div class="header-left">
+                    <div class="assistant-avatar">
+                        <i class="fas fa-robot"></i>
+                        <span class="avatar-status" id="assistant-status"></span>
+                    </div>
+                    <div class="header-info">
+                        <div class="assistant-name">
+                            المساعد الذكي V14
+                            <span class="version-badge">محرك الربط الذكي</span>
+                        </div>
+                        <div class="assistant-subtitle" id="assistant-subtitle">
+                            جاهز للربط الذكي بين القواعد
+                        </div>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button id="stats-btn" class="header-btn" title="إحصائيات الربط">
+                        <span class="btn-icon"><i class="fas fa-chart-line"></i></span>
+                    </button>
+                    <button id="settings-btn" class="header-btn" title="الإعدادات">
+                        <span class="btn-icon"><i class="fas fa-cog"></i></span>
+                    </button>
+                    <button id="mute-btn" class="header-btn" title="كتم الصوت">
+                        <span class="btn-icon"><i class="fas fa-volume-up"></i></span>
+                    </button>
+                    <button id="minimize-btn" class="header-btn" title="تصغير">
+                        <span class="btn-icon"><i class="fas fa-minus"></i></span>
+                    </button>
+                    <button id="close-btn" class="header-btn" title="إغلاق">
+                        <span class="btn-icon"><i class="fas fa-times"></i></span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="smart-status-bar">
+                <div class="status-left">
+                    <div class="status-item" id="linking-status">
+                        <i class="fas fa-link"></i>
+                        <span>الربط الذكي: نشط</span>
+                    </div>
+                    <div class="status-item" id="memory-status">
+                        <i class="fas fa-memory"></i>
+                        <span>الذاكرة: 20 رسالة</span>
+                    </div>
+                </div>
+                <div class="status-right">
+                    <div class="status-item" id="confidence-display">
+                        <i class="fas fa-bullseye"></i>
+                        <span>الثقة: --</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="smart-messages-container" id="smart-messages">
+                <!-- الرسائل تُضاف هنا ديناميكياً -->
+            </div>
+            
+            <div class="smart-thinking-indicator" id="thinking-indicator">
+                <div class="thinking-header">
+                    <div class="thinking-icon">
+                        <div class="spinner"></div>
+                    </div>
+                    <div class="thinking-text">
+                        <div class="thinking-title">جاري البحث الذكي</div>
+                        <div class="thinking-subtitle" id="thinking-subtitle">فحص الأنشطة والمناطق والحوافز...</div>
+                    </div>
+                </div>
+                <div class="thinking-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="thinking-progress"></div>
+                    </div>
+                    <div class="progress-steps">
+                        <span class="step active">تحليل الاستعلام</span>
+                        <span class="step">الربط الذكي</span>
+                        <span class="step">الاستنتاج الذكي</span>
+                        <span class="step">تنسيق الرد</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="smart-input-area">
+                <div class="input-header">
+                    <div class="input-tabs">
+                        <button class="tab-btn active" data-tab="text">
+                            <i class="fas fa-keyboard"></i> كتابة
+                        </button>
+                        <button class="tab-btn" data-tab="voice" id="voice-tab-btn">
+                            <i class="fas fa-microphone"></i> صوت
+                        </button>
+                        <button class="tab-btn" data-tab="quick" id="quick-tab-btn">
+                            <i class="fas fa-bolt"></i> سريع
+                        </button>
+                    </div>
+                    <div class="input-actions">
+                        <button id="clear-btn" class="action-btn" title="مسح المحادثة">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <button id="help-btn" class="action-btn" title="المساعدة">
+                            <i class="fas fa-question-circle"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="tab-content active" id="text-tab">
+                    <div class="input-container">
+                        <textarea 
+                            id="smart-chat-input" 
+                            placeholder="اكتب سؤالك هنا... مثال: 'ما تراخيص فندق 5 نجوم في العاشر من رمضان؟'"
+                            rows="2"
+                            autocomplete="off"
+                        ></textarea>
+                        <button id="send-btn" class="send-btn">
+                            <i class="fas fa-paper-plane"></i>
+                            <span>إرسال</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="voice-tab">
+                    <div class="voice-container">
+                        <div class="voice-visualizer" id="voice-visualizer">
+                            <div class="voice-bar"></div>
+                            <div class="voice-bar"></div>
+                            <div class="voice-bar"></div>
+                            <div class="voice-bar"></div>
+                            <div class="voice-bar"></div>
+                        </div>
+                        <div class="voice-controls">
+                            <button id="start-voice-btn" class="voice-btn">
+                                <i class="fas fa-microphone"></i>
+                                <span>ابدأ التحدث</span>
+                            </button>
+                            <div class="voice-feedback" id="voice-feedback">
+                                جاري الاستماع...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="quick-tab">
+                    <div class="quick-queries">
+                        <div class="quick-title">استفسارات سريعة:</div>
+                        <div class="quick-grid">
+                            <button class="quick-btn" data-query="تراخيص فندق 5 نجوم">
+                                🏨 فندق 5 نجوم
+                            </button>
+                            <button class="quick-btn" data-query="منطقة العاشر من رمضان">
+                                🏭 منطقة العاشر
+                            </button>
+                            <button class="quick-btn" data-query="ما هو القرار 104">
+                                ⭐ القرار 104
+                            </button>
+                            <button class="quick-btn" data-query="هل مصنع الأدوية مشمول في 104">
+                                💊 مصنع أدوية
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="input-footer">
+                    <div class="footer-tips" id="typing-tips">
+                        💡 حاول: "ما تكلفة مصنع أدوية في برج العرب"
+                    </div>
+                    <div class="footer-stats">
+                        <span id="char-count">0/500</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- نافذة الإعدادات -->
+            <div class="settings-panel" id="settings-panel">
+                <div class="settings-header">
+                    <h3><i class="fas fa-cog"></i> إعدادات المساعد الذكي</h3>
+                    <button class="close-settings" id="close-settings">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="settings-content">
+                    <div class="setting-group">
+                        <h4><i class="fas fa-link"></i> إعدادات الربط الذكي</h4>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" id="toggle-linking" checked>
+                                <span>تفعيل الربط الذكي</span>
+                            </label>
+                            <div class="setting-desc">ربط تلقائي بين الأنشطة والمناطق والقرار 104</div>
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" id="show-confidence" checked>
+                                <span>عرض مؤشر الثقة</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="setting-group">
+                        <h4><i class="fas fa-comments"></i> إعدادات المحادثة</h4>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" id="auto-scroll" checked>
+                                <span>التمرير التلقائي</span>
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" id="sound-effects" checked>
+                                <span>الأصوات التأثيرية</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="setting-group">
+                        <h4><i class="fas fa-chart-bar"></i> الأداء</h4>
+                        <button class="btn btn-secondary" id="clear-cache">
+                            <i class="fas fa-trash"></i> مسح الذاكرة المؤقتة
+                        </button>
+                        <button class="btn btn-secondary" id="reset-stats">
+                            <i class="fas fa-redo"></i> إعادة تعيين الإحصائيات
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    cacheDOMReferences() {
+        // العناصر الرئيسية
+        this.elements.header = this.elements.window.querySelector('.smart-chat-header');
+        this.elements.messagesContainer = this.elements.window.querySelector('.smart-messages-container');
+        this.elements.inputArea = this.elements.window.querySelector('.smart-input-area');
+        this.elements.textInput = this.elements.window.querySelector('#smart-chat-input');
+        this.elements.sendBtn = this.elements.window.querySelector('#send-btn');
+        
+        // أزرار التحكم
+        this.elements.statsBtn = this.elements.window.querySelector('#stats-btn');
+        this.elements.settingsBtn = this.elements.window.querySelector('#settings-btn');
+        this.elements.muteBtn = this.elements.window.querySelector('#mute-btn');
+        this.elements.closeBtn = this.elements.window.querySelector('#close-btn');
+        this.elements.minimizeBtn = this.elements.window.querySelector('#minimize-btn');
+        this.elements.clearBtn = this.elements.window.querySelector('#clear-btn');
+        this.elements.helpBtn = this.elements.window.querySelector('#help-btn');
+        
+        // مؤشرات الحالة
+        this.elements.linkingStatus = this.elements.window.querySelector('#linking-status');
+        this.elements.confidenceDisplay = this.elements.window.querySelector('#confidence-display');
+        this.elements.thinkingIndicator = this.elements.window.querySelector('#smart-thinking-indicator');
+        this.elements.thinkingSubtitle = this.elements.window.querySelector('#thinking-subtitle');
+        this.elements.thinkingProgress = this.elements.window.querySelector('#thinking-progress');
+        
+        // علامات التبويب
+        this.elements.tabBtns = this.elements.window.querySelectorAll('.tab-btn');
+        this.elements.tabContents = this.elements.window.querySelectorAll('.tab-content');
+        
+        // الإعدادات
+        this.elements.settingsPanel = this.elements.window.querySelector('#settings-panel');
+        this.elements.toggleLinking = this.elements.window.querySelector('#toggle-linking');
+        this.elements.closeSettings = this.elements.window.querySelector('#close-settings');
+        
+        // الصوت
+        this.elements.voiceTabBtn = this.elements.window.querySelector('#voice-tab-btn');
+        this.elements.startVoiceBtn = this.elements.window.querySelector('#start-voice-btn');
+        this.elements.voiceFeedback = this.elements.window.querySelector('#voice-feedback');
+        
+        // الاستفسارات السريعة
+        this.elements.quickBtns = this.elements.window.querySelectorAll('.quick-btn');
+    }
+    
+    // ==================== تهيئة المكونات ====================
+    async initializeComponents() {
+        // تهيئة منسق الردود
+        this.formatter = new ResponseFormatter();
+        
+        // تهيئة الصوت (إذا كان متاحاً)
+        if (window.VoiceHandler) {
+            this.voice = new VoiceHandler(
+                (transcript, confidence) => this.handleVoiceResult(transcript, confidence),
+                (error) => this.handleVoiceError(error)
+            );
+        } else {
+            this.elements.voiceTabBtn.style.display = 'none';
+        }
+        
+        // استعادة الإعدادات
+        this.restoreSettings();
+        
+        // تحديث الحالة
+        this.updateStatusDisplay();
+    }
+    
+    // ==================== ربط الأحداث المحسنة ====================
+    bindEnhancedEvents() {
+        // التحكم بالنافذة
+        this.elements.fab.addEventListener('click', () => this.toggleWindow());
+        this.elements.closeBtn.addEventListener('click', () => this.closeWindow());
+        this.elements.minimizeBtn.addEventListener('click', () => this.minimizeWindow());
+        
+        // إرسال الرسائل
+        this.elements.sendBtn.addEventListener('click', () => this.sendTextMessage());
+        this.elements.textInput.addEventListener('input', (e) => this.handleInputChange(e));
+        this.elements.textInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.sendTextMessage();
+            }
+        });
+        
+        // علامات التبويب
+        this.elements.tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => this.switchTab(btn.dataset.tab));
+        });
+        
+        // الاستفسارات السريعة
+        this.elements.quickBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.sendMessage(btn.dataset.query);
+            });
+        });
+        
+        // الإعدادات والإحصائيات
+        this.elements.settingsBtn.addEventListener('click', () => this.toggleSettings());
+        this.elements.statsBtn.addEventListener('click', () => this.showLinkingStats());
+        this.elements.clearBtn.addEventListener('click', () => this.clearConversation());
+        this.elements.helpBtn.addEventListener('click', () => this.showHelp());
+        
+        // إعدادات الربط الذكي
+        this.elements.toggleLinking.addEventListener('change', (e) => {
+            this.toggleLinking(e.target.checked);
+        });
+        this.elements.closeSettings.addEventListener('click', () => this.toggleSettings(false));
+        
+        // الصوت
+        if (this.voice) {
+            this.elements.startVoiceBtn.addEventListener('click', () => this.toggleVoice());
+            this.elements.muteBtn.addEventListener('click', () => this.toggleMute());
+        } else {
+            this.elements.muteBtn.style.display = 'none';
+        }
+        
+        // جعل النافذة قابلة للسحب
+        this.makeDraggable();
+    }
+    
+    // ==================== المعالجة الأساسية ====================
+    async processQuery(query) {
+        if (!query.trim()) return;
+        
+        // إضافة رسالة المستخدم
+        this.addMessage('user', query);
+        
+        // التحقق من وجود المساعد
+        if (!this.currentAssistant) {
+            this.showError('المساعد الذكي غير متوفر. يرجى التحديث.');
+            return;
+        }
+        
+        // عرض مؤشر التفكير
+        this.showThinking(true);
+        
+        try {
+            console.log(`🤖 إرسال استعلام إلى المساعد V14: "${query}"`);
+            
+            // إرسال الاستعلام
+            const response = await this.currentAssistant.query(query);
+            
+            // إخفاء مؤشر التفكير
+            this.showThinking(false);
+            
+            // تحديث سياق المحادثة
+            this.context.lastQuery = query;
+            this.context.lastResponse = response;
+            this.context.conversationDepth++;
+            
+            // التعامل مع الحالات الخاصة
+            if (this.handleSpecialCases(response)) return;
+            
+            // تنسيق وعرض الرد
+            this.displayResponse(response);
+            
+            // تحديث الإحصائيات والعرض
+            this.updateAfterResponse(response);
+            
+        } catch (error) {
+            console.error('❌ خطأ في معالجة الاستعلام:', error);
+            this.showThinking(false);
+            this.showError(`حدث خطأ تقني: ${error.message}`);
+        }
+    }
+    
+    // ==================== عرض الرد ====================
+    async displayResponse(response) {
+        // تنسيق الرد
+        const formattedHTML = this.formatter.formatResponse(response);
+        
+        // إضافة رسالة المساعد
+        this.addMessage('assistant', formattedHTML, true);
+        
+        // عرض معلومات الربط الذكي إذا كانت موجودة
+        if (response._linkingInfo && this.settings.showLinkingInfo) {
+            this.showLinkingInfo(response._linkingInfo);
+        }
+        
+        // عرض التوصيات الاستنتاجية إذا كانت موجودة
+        if (response.geniusInsight) {
+            this.showGeniusInsight(response.geniusInsight);
+        }
+        
+        // تحديث مؤشر الثقة
+        if (response.confidence !== undefined) {
+            this.updateConfidenceDisplay(response.confidence);
+        }
+        
+        // القراءة الصوتية
+        if (this.currentMode === 'voice' && this.voice && response.text) {
+            const speechText = this.extractSpeechText(response);
+            this.voice.speak(speechText);
+        }
+    }
+    
+    // ==================== دوال العرض الخاصة ====================
+    showLinkingInfo(linkingInfo) {
+        const infoHTML = `
+            <div class="linking-info-card">
+                <div class="linking-header">
+                    <i class="fas fa-link"></i>
+                    <span>معلومات الربط الذكي</span>
+                </div>
+                <div class="linking-content">
+                    <div class="linking-item">
+                        <span class="label">الطريقة:</span>
+                        <span class="value">${linkingInfo.method || 'غير معروف'}</span>
+                    </div>
+                    <div class="linking-item">
+                        <span class="label">الثقة:</span>
+                        <span class="value confidence-${linkingInfo.confidence > 0.7 ? 'high' : linkingInfo.confidence > 0.5 ? 'medium' : 'low'}">
+                            ${(linkingInfo.confidence * 100).toFixed(1)}%
+                        </span>
+                    </div>
+                    <div class="linking-item">
+                        <span class="label">المصدر:</span>
+                        <span class="value">${linkingInfo.vectorId || 'نظام المتجهات'}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        this.addMessage('system', infoHTML, true);
+    }
+    
+    showGeniusInsight(insight) {
+        if (!insight.recommendation) return;
+        
+        const insightHTML = `
+            <div class="genius-insight-card">
+                <div class="insight-header">
+                    <i class="fas fa-lightbulb"></i>
+                    <span>💡 التوصية الذكية</span>
+                </div>
+                <div class="insight-content">
+                    ${insight.recommendation.split('\n').map(line => `<p>${line}</p>`).join('')}
+                    ${insight.technicalAlert ? `
+                    <div class="technical-alert">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        ${insight.technicalAlert}
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+        
+        this.addMessage('system', insightHTML, true);
+    }
+    
+    showLinkingStats() {
+        if (!this.currentAssistant || !this.currentAssistant.getLinkingPerformance) {
+            this.showError('معلومات الربط غير متوفرة');
+            return;
+        }
+        
+        try {
+            const stats = this.currentAssistant.getLinkingPerformance();
+            
+            const statsHTML = `
+                <div class="stats-card">
+                    <div class="stats-header">
+                        <i class="fas fa-chart-line"></i>
+                        <span>📊 إحصائيات الربط الذكي</span>
+                    </div>
+                    <div class="stats-content">
+                        ${stats.engine ? `
+                        <div class="engine-stats">
+                            <h4>محرك الربط</h4>
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <span class="stat-label">الحالة:</span>
+                                    <span class="stat-value">${stats.engine.status}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">المحاولات:</span>
+                                    <span class="stat-value">${stats.engine.totalAttempts}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">ضربات التخزين:</span>
+                                    <span class="stat-value">${stats.engine.cacheHits}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">معدل النجاح:</span>
+                                    <span class="stat-value">${stats.engine.successRate}</span>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        ${stats.assistant ? `
+                        <div class="assistant-stats">
+                            <h4>المساعد الذكي</h4>
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <span class="stat-label">إجمالي محاولات الربط:</span>
+                                    <span class="stat-value">${stats.assistant.totalAttempts}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">الربط الناجح:</span>
+                                    <span class="stat-value">${stats.assistant.successfulLinks}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">معدل النجاح:</span>
+                                    <span class="stat-value">${stats.assistant.successRate}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">متوسط الثقة:</span>
+                                    <span class="stat-value">${stats.assistant.averageConfidence}</span>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            this.addMessage('system', statsHTML, true);
+            
+        } catch (error) {
+            console.error('❌ خطأ في جلب الإحصائيات:', error);
+            this.showError('تعذر جلب إحصائيات الربط');
+        }
+    }
+    
+    // ==================== إدارة الرسائل ====================
+    addMessage(sender, content, isHTML = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `smart-message message-${sender}`;
+        
+        if (sender === 'user') {
+            messageDiv.innerHTML = `
+                <div class="message-avatar user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="message-content">
+                    <div class="message-bubble user-bubble">
+                        ${isHTML ? content : this.escapeHtml(content)}
+                    </div>
+                    <div class="message-time">${this.getCurrentTime()}</div>
+                </div>
+            `;
+        } else if (sender === 'assistant') {
+            messageDiv.innerHTML = `
+                <div class="message-avatar assistant-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="message-content">
+                    <div class="message-bubble assistant-bubble">
+                        ${isHTML ? content : this.escapeHtml(content)}
+                    </div>
+                    <div class="message-time">${this.getCurrentTime()}</div>
+                </div>
+            `;
+        } else if (sender === 'system') {
+            messageDiv.innerHTML = `
+                <div class="system-message">
+                    ${isHTML ? content : this.escapeHtml(content)}
+                </div>
+            `;
+        }
+        
+        this.elements.messagesContainer.appendChild(messageDiv);
+        
+        if (this.settings.autoScroll) {
+            this.scrollToBottom();
+        }
+    }
+    
+    // ==================== دوال مساعدة ====================
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    getCurrentTime() {
+        return new Date().toLocaleTimeString('ar-EG', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+    
+    updateConfidenceDisplay(confidence) {
+        if (!this.settings.showConfidence) return;
+        
+        const percent = Math.round(confidence * 100);
+        let color = '#4caf50';
+        
+        if (percent < 50) color = '#f44336';
+        else if (percent < 75) color = '#ff9800';
+        
+        this.elements.confidenceDisplay.innerHTML = `
+            <i class="fas fa-bullseye"></i>
+            <span>الثقة: <span style="color: ${color}">${percent}%</span></span>
+        `;
+    }
+    
+    showThinking(show) {
+        if (show) {
+            this.elements.thinkingIndicator.style.display = 'block';
+            this.startThinkingAnimation();
+        } else {
+            this.elements.thinkingIndicator.style.display = 'none';
+            this.stopThinkingAnimation();
+        }
+        
+        if (show && this.settings.autoScroll) {
+            setTimeout(() => this.scrollToBottom(), 100);
+        }
+    }
+    
+    startThinkingAnimation() {
+        let progress = 0;
+        const steps = [
+            'تحليل الاستعلام...',
+            'البحث في الأنشطة...',
+            'الربط مع المناطق...',
+            'فحص القرار 104...',
+            'التوليد الذكي...'
+        ];
+        
+        this.thinkingInterval = setInterval(() => {
+            progress += 20;
+            if (progress > 100) progress = 0;
+            
+            this.elements.thinkingProgress.style.width = `${progress}%`;
+            
+            const stepIndex = Math.floor(progress / 20);
+            if (stepIndex < steps.length) {
+                this.elements.thinkingSubtitle.textContent = steps[stepIndex];
+            }
+        }, 500);
+    }
+    
+    stopThinkingAnimation() {
+        if (this.thinkingInterval) {
+            clearInterval(this.thinkingInterval);
+            this.thinkingInterval = null;
+        }
+    }
+    
+    // ==================== الواجهة العامة ====================
+    sendMessage(text) {
+        if (!this.isOpen) this.openWindow();
+        
+        setTimeout(() => {
+            this.elements.textInput.value = text;
+            this.elements.textInput.focus();
+            this.sendTextMessage();
+        }, 100);
+    }
+    
+    selectOption(id, type, text) {
+        if (!this.currentAssistant || !this.currentAssistant.showDetails) {
+            this.showError('الدالة غير متوفرة في هذا المساعد');
+            return;
+        }
+        
+        const displayText = text.length > 50 ? text.substring(0, 50) + "..." : text;
+        this.addMessage('user', displayText);
+        
+        this.showThinking(true);
+        
+        this.currentAssistant.showDetails(id, type, text)
+            .then(response => {
+                this.showThinking(false);
+                this.displayResponse(response);
+            })
+            .catch(error => {
+                console.error('❌ خطأ في اختيار البديل:', error);
+                this.showThinking(false);
+                this.showError('تعذر جلب التفاصيل');
+            });
+    }
+    
+    toggleLinking(enabled) {
+        if (this.currentAssistant && this.currentAssistant.linkingEnabled !== undefined) {
+            this.currentAssistant.linkingEnabled = enabled;
+            this.updateStatusDisplay();
+        }
+    }
+    
+    // ==================== التحكم بالنافذة ====================
+    openWindow() {
+        this.elements.window.classList.add('open');
+        this.elements.fab.classList.add('hidden');
+        this.isOpen = true;
+        this.isMinimized = false;
+        setTimeout(() => this.elements.textInput.focus(), 300);
+    }
+    
+    closeWindow() {
+        this.elements.window.classList.remove('open');
+        this.elements.fab.classList.remove('hidden');
+        this.isOpen = false;
+        
+        if (this.voice && this.voice.isListening) {
+            this.voice.stopListening();
+        }
+        if (this.voice && this.voice.isSpeaking) {
+            this.voice.stopSpeaking();
+        }
+    }
+    
+    minimizeWindow() {
+        this.isMinimized = !this.isMinimized;
+        this.elements.window.classList.toggle('minimized', this.isMinimized);
+    }
+    
+    // ==================== التوافق مع V13 ====================
+    // للحفاظ على التوافق مع الكود القديم
+    selectActivity(activityText) {
+        this.sendMessage(activityText);
+    }
+}
+
+// ==================== تهيئة عند التحميل ====================
+document.addEventListener('DOMContentLoaded', () => {
+    window.smartAssistantUI = new AssistantUIV2();
+    window.assistantUI = window.smartAssistantUI; // للتوافق
+});
