@@ -364,10 +364,13 @@ class AssistantUIV2 {
         
         // مؤشرات الحالة
         this.elements.linkingStatus = this.elements.window.querySelector('#linking-status');
+        this.elements.memoryStatus = this.elements.window.querySelector('#memory-status');
         this.elements.confidenceDisplay = this.elements.window.querySelector('#confidence-display');
         this.elements.thinkingIndicator = this.elements.window.querySelector('#smart-thinking-indicator');
         this.elements.thinkingSubtitle = this.elements.window.querySelector('#thinking-subtitle');
         this.elements.thinkingProgress = this.elements.window.querySelector('#thinking-progress');
+        this.elements.assistantStatus = this.elements.window.querySelector('#assistant-status');
+        this.elements.assistantSubtitle = this.elements.window.querySelector('#assistant-subtitle');
         
         // علامات التبويب
         this.elements.tabBtns = this.elements.window.querySelectorAll('.tab-btn');
@@ -408,153 +411,185 @@ class AssistantUIV2 {
         // تحديث الحالة
         this.updateStatusDisplay();
     }
-     // ==================== دوال مساعدة للإعدادات ====================
-restoreSettings() {
-    try {
-        const saved = localStorage.getItem('assistant_ui_settings_v2');
-        if (saved) {
-            this.settings = JSON.parse(saved);
-            console.log('✅ تم استعادة الإعدادات');
+    
+    // ==================== دوال مساعدة للإعدادات ====================
+    restoreSettings() {
+        try {
+            const saved = localStorage.getItem('assistant_ui_settings_v2');
+            if (saved) {
+                this.settings = JSON.parse(saved);
+                console.log('✅ تم استعادة الإعدادات');
+            }
+        } catch (e) {
+            console.warn('⚠️ فشل استعادة الإعدادات:', e);
         }
-    } catch (e) {
-        console.warn('⚠️ فشل استعادة الإعدادات:', e);
     }
-}
 
-saveSettings() {
-    try {
-        localStorage.setItem('assistant_ui_settings_v2', JSON.stringify(this.settings));
-    } catch (e) {
-        console.warn('⚠️ فشل حفظ الإعدادات:', e);
+    saveSettings() {
+        try {
+            localStorage.setItem('assistant_ui_settings_v2', JSON.stringify(this.settings));
+        } catch (e) {
+            console.warn('⚠️ فشل حفظ الإعدادات:', e);
+        }
     }
-}
 
-// أضف هذا الكود بعد دالة restoreSettings وقبل createFallbackUI في ملف assistant_ui.js
-
-// ==================== دوال تحديث الحالة ====================
-updateStatusDisplay() {
-    // تحديث حالة الربط الذكي
-    if (this.currentAssistant) {
-        const linkingStatus = this.currentAssistant.linkingEnabled ? 'نشط' : 'معطل';
-        this.elements.linkingStatus.innerHTML = `
-            <i class="fas fa-link"></i>
-            <span>الربط الذكي: ${linkingStatus}</span>
-        `;
-    }
-    
-    // تحديث حالة الذاكرة
-    const memoryCount = this.context?.conversationDepth || 0;
-    this.elements.memoryStatus.innerHTML = `
-        <i class="fas fa-memory"></i>
-        <span>الذاكرة: ${memoryCount} رسالة</span>
-    `;
-    
-    // تحديث الحالة العامة
-    if (this.currentAssistant) {
-        this.elements.assistantStatus.className = 'avatar-status status-active';
-        this.elements.assistantStatus.title = 'المساعد نشط';
-    } else {
-        this.elements.assistantStatus.className = 'avatar-status status-inactive';
-        this.elements.assistantStatus.title = 'المساعد غير متصل';
-    }
-}
-    
-createFallbackUI() {
-    console.log('🔄 إنشاء واجهة الطوارئ البسيطة...');
-    
-    const fallbackDiv = document.createElement('div');
-    fallbackDiv.id = 'assistant-fallback';
-    fallbackDiv.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        width: 300px;
-        background: white;
-        border: 1px solid #ccc;
-        border-radius: 10px;
-        padding: 15px;
-        z-index: 10000;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        font-family: 'Segoe UI', Arial, sans-serif;
-    `;
-    
-    fallbackDiv.innerHTML = `
-        <div style="display: flex; align-items: center; margin-bottom: 15px;">
-            <div style="background: #4caf50; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
-                <i class="fas fa-robot"></i>
-            </div>
-            <div>
-                <h3 style="margin: 0; font-size: 16px;">المساعد الذكي (وضع الطوارئ)</h3>
-                <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">الواجهة المتقدمة غير متوفرة</p>
-            </div>
-        </div>
-        
-        <div style="margin-bottom: 15px;">
-            <textarea id="fallback-input" 
-                placeholder="اكتب سؤالك هنا..." 
-                style="width: 100%; height: 60px; padding: 8px; border: 1px solid #ddd; border-radius: 5px; resize: none; font-family: inherit;"></textarea>
-        </div>
-        
-        <button id="fallback-send" 
-                style="width: 100%; padding: 10px; background: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
-            <i class="fas fa-paper-plane"></i> إرسال
-        </button>
-        
-        <div id="fallback-response" 
-             style="margin-top: 15px; padding: 10px; background: #f5f5f5; border-radius: 5px; max-height: 200px; overflow-y: auto; font-size: 14px; display: none;">
-        </div>
-    `;
-    
-    document.body.appendChild(fallbackDiv);
-    
-    // ربط الأحداث
-    const sendBtn = document.getElementById('fallback-send');
-    const inputField = document.getElementById('fallback-input');
-    const responseDiv = document.getElementById('fallback-response');
-    
-    sendBtn.addEventListener('click', () => {
-        const query = inputField.value.trim();
-        if (!query) return;
-        
-        responseDiv.style.display = 'block';
-        responseDiv.innerHTML = '<div style="color: #666; text-align: center;"><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</div>';
-        
-        if (this.currentAssistant) {
-            this.currentAssistant.query(query)
-                .then(response => {
-                    responseDiv.innerHTML = `
-                        <div style="color: #333; margin-bottom: 10px;"><strong>السؤال:</strong> ${query}</div>
-                        <div style="color: #4caf50; margin-bottom: 10px;"><strong>الإجابة:</strong></div>
-                        <div style="background: white; padding: 10px; border-radius: 5px; border-left: 3px solid #4caf50;">
-                            ${response.text.replace(/\n/g, '<br>')}
-                        </div>
-                    `;
-                    inputField.value = '';
-                })
-                .catch(error => {
-                    responseDiv.innerHTML = `
-                        <div style="color: #f44336;">
-                            <strong>خطأ:</strong> ${error.message || 'حدث خطأ غير متوقع'}
-                        </div>
-                    `;
-                });
-        } else {
-            responseDiv.innerHTML = `
-                <div style="color: #f44336;">
-                    <strong>تحذير:</strong> المساعد الذكي غير متوفر حالياً
-                </div>
+    // ==================== دوال تحديث الحالة ====================
+    updateStatusDisplay() {
+        // تحديث حالة الربط الذكي
+        if (this.currentAssistant && this.elements.linkingStatus) {
+            const linkingStatus = this.currentAssistant.linkingEnabled ? 'نشط' : 'معطل';
+            this.elements.linkingStatus.innerHTML = `
+                <i class="fas fa-link"></i>
+                <span>الربط الذكي: ${linkingStatus}</span>
             `;
         }
-    });
-    
-    // السماح بالإرسال بالزر Enter
-    inputField.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendBtn.click();
+        
+        // تحديث حالة الذاكرة
+        if (this.elements.memoryStatus) {
+            const memoryCount = this.context?.conversationDepth || 0;
+            this.elements.memoryStatus.innerHTML = `
+                <i class="fas fa-memory"></i>
+                <span>الذاكرة: ${memoryCount} رسالة</span>
+            `;
         }
-    });
-}
+        
+        // تحديث الحالة العامة للمساعد
+        if (this.elements.assistantStatus) {
+            if (this.currentAssistant) {
+                this.elements.assistantStatus.className = 'avatar-status status-active';
+                this.elements.assistantStatus.title = 'المساعد نشط';
+            } else {
+                this.elements.assistantStatus.className = 'avatar-status status-inactive';
+                this.elements.assistantStatus.title = 'المساعد غير متصل';
+            }
+        }
+        
+        // تحديث العنوان الفرعي
+        if (this.elements.assistantSubtitle) {
+            if (this.currentAssistant) {
+                this.elements.assistantSubtitle.textContent = 'جاهز للربط الذكي بين القواعد';
+            } else {
+                this.elements.assistantSubtitle.textContent = 'المساعد غير متوفر';
+            }
+        }
+        
+        // تحديث مؤشر الثقة
+        if (this.elements.confidenceDisplay) {
+            this.updateConfidenceDisplay(0.5); // قيمة افتراضية
+        }
+    }
+    
+    updateConfidenceDisplay(confidence) {
+        if (!this.elements.confidenceDisplay || !this.settings.showConfidence) return;
+        
+        const percent = Math.round(confidence * 100);
+        let color = '#4caf50';
+        
+        if (percent < 50) color = '#f44336';
+        else if (percent < 75) color = '#ff9800';
+        
+        this.elements.confidenceDisplay.innerHTML = `
+            <i class="fas fa-bullseye"></i>
+            <span>الثقة: <span style="color: ${color}">${percent}%</span></span>
+        `;
+    }
+
+    createFallbackUI() {
+        console.log('🔄 إنشاء واجهة الطوارئ البسيطة...');
+        
+        const fallbackDiv = document.createElement('div');
+        fallbackDiv.id = 'assistant-fallback';
+        fallbackDiv.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 15px;
+            z-index: 10000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-family: 'Segoe UI', Arial, sans-serif;
+        `;
+        
+        fallbackDiv.innerHTML = `
+            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                <div style="background: #4caf50; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 16px;">المساعد الذكي (وضع الطوارئ)</h3>
+                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">الواجهة المتقدمة غير متوفرة</p>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <textarea id="fallback-input" 
+                    placeholder="اكتب سؤالك هنا..." 
+                    style="width: 100%; height: 60px; padding: 8px; border: 1px solid #ddd; border-radius: 5px; resize: none; font-family: inherit;"></textarea>
+            </div>
+            
+            <button id="fallback-send" 
+                    style="width: 100%; padding: 10px; background: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                <i class="fas fa-paper-plane"></i> إرسال
+            </button>
+            
+            <div id="fallback-response" 
+                 style="margin-top: 15px; padding: 10px; background: #f5f5f5; border-radius: 5px; max-height: 200px; overflow-y: auto; font-size: 14px; display: none;">
+            </div>
+        `;
+        
+        document.body.appendChild(fallbackDiv);
+        
+        // ربط الأحداث
+        const sendBtn = document.getElementById('fallback-send');
+        const inputField = document.getElementById('fallback-input');
+        const responseDiv = document.getElementById('fallback-response');
+        
+        sendBtn.addEventListener('click', () => {
+            const query = inputField.value.trim();
+            if (!query) return;
+            
+            responseDiv.style.display = 'block';
+            responseDiv.innerHTML = '<div style="color: #666; text-align: center;"><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</div>';
+            
+            if (this.currentAssistant) {
+                this.currentAssistant.query(query)
+                    .then(response => {
+                        responseDiv.innerHTML = `
+                            <div style="color: #333; margin-bottom: 10px;"><strong>السؤال:</strong> ${query}</div>
+                            <div style="color: #4caf50; margin-bottom: 10px;"><strong>الإجابة:</strong></div>
+                            <div style="background: white; padding: 10px; border-radius: 5px; border-left: 3px solid #4caf50;">
+                                ${response.text.replace(/\n/g, '<br>')}
+                            </div>
+                        `;
+                        inputField.value = '';
+                    })
+                    .catch(error => {
+                        responseDiv.innerHTML = `
+                            <div style="color: #f44336;">
+                                <strong>خطأ:</strong> ${error.message || 'حدث خطأ غير متوقع'}
+                            </div>
+                        `;
+                    });
+            } else {
+                responseDiv.innerHTML = `
+                    <div style="color: #f44336;">
+                        <strong>تحذير:</strong> المساعد الذكي غير متوفر حالياً
+                    </div>
+                `;
+            }
+        });
+        
+        // السماح بالإرسال بالزر Enter
+        inputField.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendBtn.click();
+            }
+        });
+    }
     
     // ==================== ربط الأحداث المحسنة ====================
     bindEnhancedEvents() {
@@ -872,21 +907,6 @@ createFallbackUI() {
         });
     }
     
-    updateConfidenceDisplay(confidence) {
-        if (!this.settings.showConfidence) return;
-        
-        const percent = Math.round(confidence * 100);
-        let color = '#4caf50';
-        
-        if (percent < 50) color = '#f44336';
-        else if (percent < 75) color = '#ff9800';
-        
-        this.elements.confidenceDisplay.innerHTML = `
-            <i class="fas fa-bullseye"></i>
-            <span>الثقة: <span style="color: ${color}">${percent}%</span></span>
-        `;
-    }
-    
     showThinking(show) {
         if (show) {
             this.elements.thinkingIndicator.style.display = 'block';
@@ -999,6 +1019,356 @@ createFallbackUI() {
         this.elements.window.classList.toggle('minimized', this.isMinimized);
     }
     
+    // ==================== دوال إضافية ====================
+    showSmartWelcome() {
+        const welcomeText = `🎉 **مرحباً بك في المساعد الذكي V14**\n\n${'═'.repeat(60)}\n\n🧠 **مميزات النظام الجديد:**\n• ربط ذكي بين الأنشطة والمناطق والقرار 104\n• محرك بحث دلالي متقدم\n• ذاكرة محادثة عميقة (20 رسالة)\n• استفسار ذكي عند الغموض\n• إحصائيات أداء متقدمة\n\n💡 **جرب:**\n• "تراخيص فندق 5 نجوم"\n• "ما هو القرار 104"\n• "منطقة العاشر من رمضان"\n\n${'═'.repeat(60)}`;
+        
+        setTimeout(() => {
+            this.addMessage('assistant', welcomeText);
+        }, 1000);
+    }
+    
+    showAssistantWarning() {
+        const warningHTML = `
+            <div class="warning-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div class="warning-content">
+                    <div class="warning-title">تحذير: المساعد الذكي غير متوفر</div>
+                    <div class="warning-text">
+                        لم يتم العثور على Smart Assistant V14.<br>
+                        يرجى التأكد من تحميل ملف smart_assistant_v14.js
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        setTimeout(() => {
+            this.addMessage('system', warningHTML, true);
+        }, 1500);
+    }
+    
+    handleVoiceResult(transcript, confidence) {
+        if (confidence > 0.7) {
+            this.sendMessage(transcript);
+        } else {
+            this.showError(`لم أفهم الصوت بوضوح (ثقة: ${(confidence * 100).toFixed(0)}%). يرجى المحاولة مرة أخرى.`);
+        }
+    }
+    
+    handleVoiceError(error) {
+        console.error('❌ خطأ في الصوت:', error);
+        this.showError('حدث خطأ في التعرف على الصوت. يرجى استخدام الكتابة.');
+    }
+    
+    showError(message) {
+        const errorHTML = `
+            <div class="error-message">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        this.addMessage('system', errorHTML, true);
+    }
+    
+    switchTab(tabName) {
+        // إخفاء جميع المحتويات
+        this.elements.tabContents.forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // إلغاء تنشيط جميع الأزرار
+        this.elements.tabBtns.forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // إظهار المحتوى المحدد
+        const tabContent = document.getElementById(`${tabName}-tab`);
+        if (tabContent) {
+            tabContent.classList.add('active');
+        }
+        
+        // تنشيط الزر المحدد
+        const activeBtn = Array.from(this.elements.tabBtns).find(btn => btn.dataset.tab === tabName);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+        }
+        
+        this.currentMode = tabName;
+    }
+    
+    sendTextMessage() {
+        const text = this.elements.textInput.value.trim();
+        if (!text) return;
+        
+        this.processQuery(text);
+        this.elements.textInput.value = '';
+    }
+    
+    handleInputChange(e) {
+        const charCount = e.target.value.length;
+        const charCountElement = document.getElementById('char-count');
+        if (charCountElement) {
+            charCountElement.textContent = `${charCount}/500`;
+        }
+    }
+    
+    toggleSettings(show) {
+        if (typeof show === 'undefined') {
+            show = !this.elements.settingsPanel.classList.contains('active');
+        }
+        
+        if (show) {
+            this.elements.settingsPanel.classList.add('active');
+        } else {
+            this.elements.settingsPanel.classList.remove('active');
+        }
+    }
+    
+    toggleVoice() {
+        if (!this.voice) return;
+        
+        if (this.voice.isListening) {
+            this.voice.stopListening();
+            this.elements.voiceFeedback.textContent = 'متوقف';
+            this.elements.startVoiceBtn.innerHTML = '<i class="fas fa-microphone"></i><span>ابدأ التحدث</span>';
+        } else {
+            this.voice.startListening();
+            this.elements.voiceFeedback.textContent = 'جاري الاستماع...';
+            this.elements.startVoiceBtn.innerHTML = '<i class="fas fa-stop"></i><span>توقف</span>';
+        }
+    }
+    
+    toggleMute() {
+        if (!this.voice) return;
+        
+        this.voice.toggleMute();
+        const isMuted = this.voice.isMuted;
+        this.elements.muteBtn.innerHTML = `
+            <span class="btn-icon">
+                <i class="fas ${isMuted ? 'fa-volume-mute' : 'fa-volume-up'}"></i>
+            </span>
+        `;
+        this.elements.muteBtn.title = isMuted ? 'تشغيل الصوت' : 'كتم الصوت';
+    }
+    
+    clearConversation() {
+        this.elements.messagesContainer.innerHTML = '';
+        this.context.conversationDepth = 0;
+        this.context.lastQuery = null;
+        this.context.lastResponse = null;
+        this.context.currentAlternatives = [];
+        this.context.awaitingConfirmation = false;
+        
+        this.updateStatusDisplay();
+        
+        const clearedMessage = '✅ تم مسح المحادثة بنجاح. جاهز لاستقبال استفسارات جديدة.';
+        this.addMessage('system', clearedMessage);
+    }
+    
+    showHelp() {
+        const helpHTML = `
+            <div class="help-card">
+                <div class="help-header">
+                    <i class="fas fa-question-circle"></i>
+                    <span>🎯 دليل استخدام المساعد الذكي V14</span>
+                </div>
+                <div class="help-content">
+                    <div class="help-section">
+                        <h4>📋 أنواع الاستفسارات المدعومة:</h4>
+                        <ul>
+                            <li><strong>الأنشطة:</strong> "تراخيص فندق 5 نجوم"</li>
+                            <li><strong>المناطق:</strong> "منطقة العاشر من رمضان"</li>
+                            <li><strong>القرار 104:</strong> "ما هو القرار 104"</li>
+                            <li><strong>الربط الذكي:</strong> "هل مصنع أدوية مشمول في 104"</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h4>⚡ الاستفسارات السريعة:</h4>
+                        <div class="quick-help">
+                            <button class="help-quick-btn" onclick="window.smartAssistantUI.sendMessage('تراخيص فندق 5 نجوم')">
+                                🏨 فندق 5 نجوم
+                            </button>
+                            <button class="help-quick-btn" onclick="window.smartAssistantUI.sendMessage('منطقة العاشر من رمضان')">
+                                🏭 منطقة العاشر
+                            </button>
+                            <button class="help-quick-btn" onclick="window.smartAssistantUI.sendMessage('ما هو القرار 104')">
+                                ⭐ القرار 104
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h4>🔧 المميزات المتقدمة:</h4>
+                        <ul>
+                            <li>الربط الذكي بين القواعد</li>
+                            <li>ذاكرة محادثة 20 رسالة</li>
+                            <li>تأكيد المستخدم عند الغموض</li>
+                            <li>إحصائيات أداء مفصلة</li>
+                            <li>دعم الصوت والكتابة</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        this.addMessage('system', helpHTML, true);
+    }
+    
+    handleSpecialCases(response) {
+        if (response.type === 'confirmation_needed' && response.alternatives) {
+            this.showConfirmationDialog(response.alternatives, response.originalQuery);
+            return true;
+        }
+        
+        if (response.type === 'clarification_needed') {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    showConfirmationDialog(alternatives, originalQuery) {
+        const dialogHTML = `
+            <div class="confirmation-dialog">
+                <div class="dialog-header">
+                    <i class="fas fa-question-circle"></i>
+                    <span>اختر النتيجة الصحيحة:</span>
+                </div>
+                <div class="dialog-content">
+                    <div class="alternatives-list">
+                        ${alternatives.map((alt, index) => `
+                            <div class="alternative-item" data-id="${alt.id}" data-type="${alt.type}">
+                                <div class="alt-number">${index + 1}</div>
+                                <div class="alt-content">
+                                    <div class="alt-text">${alt.displayText}</div>
+                                    <div class="alt-confidence">ثقة: ${(alt.score * 100).toFixed(1)}%</div>
+                                </div>
+                                <button class="alt-select-btn" data-index="${index}">اختيار</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="dialog-footer">
+                    <button class="dialog-btn cancel-btn">إلغاء</button>
+                    <button class="dialog-btn retry-btn">إعادة صياغة السؤال</button>
+                </div>
+            </div>
+        `;
+        
+        this.addMessage('system', dialogHTML, true);
+        
+        // ربط أحداث الأزرار
+        setTimeout(() => {
+            const messageContainer = this.elements.messagesContainer;
+            const lastMessage = messageContainer.lastElementChild;
+            
+            lastMessage.querySelectorAll('.alt-select-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const index = parseInt(btn.dataset.index);
+                    const alternative = alternatives[index];
+                    
+                    if (this.currentAssistant && this.currentAssistant.showDetails) {
+                        this.selectOption(alternative.id, alternative.type, alternative.displayText);
+                    }
+                });
+            });
+            
+            lastMessage.querySelector('.cancel-btn').addEventListener('click', () => {
+                this.addMessage('user', 'ألغيت الاختيار');
+            });
+            
+            lastMessage.querySelector('.retry-btn').addEventListener('click', () => {
+                this.addMessage('user', 'سأعيد صياغة السؤال: ' + originalQuery);
+                setTimeout(() => {
+                    this.sendMessage(originalQuery);
+                }, 500);
+            });
+        }, 100);
+    }
+    
+    extractSpeechText(response) {
+        // استخراج النص المناسب للقراءة الصوتية من الرد
+        if (typeof response.text === 'string') {
+            // إزالة التنسيق والرموز الخاصة
+            return response.text
+                .replace(/\*\*/g, '')
+                .replace(/═+/g, '')
+                .replace(/🎯|🧠|📋|📍|⚖️|🏛️|💰|🎉|💡|⚠️|❌|✅|🔗|📊|⚡|🔍|⏱️|📂|🎓|📦|🗺️|🏨|🏭|⭐|💊/g, '')
+                .replace(/\n\n+/g, '. ')
+                .replace(/\n/g, ' ')
+                .trim();
+        }
+        return 'نفذ الأمر بنجاح';
+    }
+    
+    updateAfterResponse(response) {
+        // تحديث إحصائيات السياق
+        this.context.conversationDepth++;
+        
+        // تحديث مؤشر الثقة إذا كان موجوداً
+        if (response.confidence !== undefined) {
+            this.updateConfidenceDisplay(response.confidence);
+        }
+        
+        // تحديث حالة الذاكرة
+        this.updateStatusDisplay();
+    }
+    
+    scrollToBottom() {
+        this.elements.messagesContainer.scrollTop = this.elements.messagesContainer.scrollHeight;
+    }
+    
+    makeDraggable() {
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
+        
+        const header = this.elements.header;
+        const windowElement = this.elements.window;
+        
+        header.addEventListener('mousedown', dragStart);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', dragEnd);
+        
+        function dragStart(e) {
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+            
+            if (e.target === header || header.contains(e.target)) {
+                isDragging = true;
+            }
+        }
+        
+        function drag(e) {
+            if (isDragging) {
+                e.preventDefault();
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+                
+                xOffset = currentX;
+                yOffset = currentY;
+                
+                setTranslate(currentX, currentY, windowElement);
+            }
+        }
+        
+        function dragEnd() {
+            initialX = currentX;
+            initialY = currentY;
+            isDragging = false;
+        }
+        
+        function setTranslate(xPos, yPos, el) {
+            el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+        }
+    }
+    
     // ==================== التوافق مع V13 ====================
     // للحفاظ على التوافق مع الكود القديم
     selectActivity(activityText) {
@@ -1010,8 +1380,4 @@ createFallbackUI() {
 document.addEventListener('DOMContentLoaded', () => {
     window.smartAssistantUI = new AssistantUIV2();
     window.assistantUI = window.smartAssistantUI; // للتوافق
-
 });
-
-
-
