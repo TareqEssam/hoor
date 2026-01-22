@@ -114,8 +114,6 @@ class AssistantUIV2 {
         chatWindow.innerHTML = this.createEnhancedWindowHTML();
         document.body.appendChild(chatWindow);
         this.elements.window = chatWindow;
-        this.elements.window.style.display = 'none';
-
         
         // تخزين المراجع
         this.cacheDOMReferences();
@@ -407,7 +405,6 @@ class AssistantUIV2 {
             this.elements.voiceTabBtn.style.display = 'none';
         }
         
-   
         // استعادة الإعدادات
         this.restoreSettings();
         
@@ -644,64 +641,8 @@ class AssistantUIV2 {
         }
         
         // جعل النافذة قابلة للسحب
-        // دالة جعل النافذة قابلة للسحب
-    makeDraggable() {
-        const header = this.elements.header;
-        const win = this.elements.window;
-        let isDragging = false;
-        let currentX;
-        let currentY;
-        let initialX;
-        let initialY;
-
-        header.onmousedown = (e) => {
-            isDragging = true;
-            initialX = e.clientX - win.offsetLeft;
-            initialY = e.clientY - win.offsetTop;
-        };
-
-        document.onmousemove = (e) => {
-            if (isDragging) {
-                currentX = e.clientX - initialX;
-                currentY = e.clientY - initialY;
-                win.style.left = currentX + 'px';
-                win.style.top = currentY + 'px';
-                win.style.bottom = 'auto';
-                win.style.right = 'auto';
-            }
-        };
-
-        document.onmouseup = () => isDragging = false;
+        this.makeDraggable();
     }
-
-    // دالة كتم الصوت
-    toggleMute() {
-        if (!this.voice) return;
-        const isMuted = this.voice.toggleMute();
-        this.elements.muteBtn.innerHTML = isMuted ? 
-            '<span class="btn-icon"><i class="fas fa-volume-mute"></i></span>' : 
-            '<span class="btn-icon"><i class="fas fa-volume-up"></i></span>';
-    }
-
-    // دالة تبديل وضع الصوت
-    toggleVoice() {
-        if (!this.voice) return;
-        if (this.voice.isListening) {
-            this.voice.stopListening();
-            this.elements.startVoiceBtn.innerHTML = '<i class="fas fa-microphone"></i> <span>ابدأ التحدث</span>';
-            this.elements.voiceFeedback.style.display = 'none';
-        } else {
-            this.voice.startListening();
-            this.elements.startVoiceBtn.innerHTML = '<i class="fas fa-stop"></i> <span>إيقاف</span>';
-            this.elements.voiceFeedback.style.display = 'block';
-        }
-    }
-    
-    // دالة استخراج النص للنطق (مطلوبة لـ V14)
-    extractSpeechText(response) {
-        return response.text.replace(/[*#_]/g, '').substring(0, 200);
-    }
-    
     
     // ==================== المعالجة الأساسية ====================
     async processQuery(query) {
@@ -1440,8 +1381,3 @@ document.addEventListener('DOMContentLoaded', () => {
     window.smartAssistantUI = new AssistantUIV2();
     window.assistantUI = window.smartAssistantUI; // للتوافق
 });
-
-
-
-
-
