@@ -707,7 +707,7 @@ class AssistantUIV2 {
     extractSpeechText(response) {
         return response.text.replace(/[*#_]/g, '').substring(0, 200);
     }
-    }
+    
     
     // ==================== المعالجة الأساسية ====================
     async processQuery(query) {
@@ -1446,5 +1446,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.smartAssistantUI = new AssistantUIV2();
     window.assistantUI = window.smartAssistantUI; // للتوافق
 });
+
 
 
