@@ -15,6 +15,465 @@ import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers
 env.allowLocalModels = false;
 env.useBrowserCache = true;
 
+// ==================== الفئات المساعدة ====================
+
+// 🔥 محلل النية الذكي
+class SmartIntentAnalyzer {
+    constructor() {
+        this.intentPatterns = new Map();
+        this.confidenceThreshold = 0.6;
+    }
+    
+    async initialize() {
+        this.loadPatterns();
+    }
+    
+    deepAnalyze(query, queryAnalysis) {
+        const text = query.toLowerCase();
+        
+        let primary = 'general';
+        let secondary = 'none';
+        let confidence = 0.5;
+        const matchedPatterns = [];
+        
+        for (const [pattern, data] of this.intentPatterns.entries()) {
+            if (text.includes(pattern)) {
+                matchedPatterns.push({ pattern, data });
+                confidence = Math.max(confidence, data.confidence || 0.7);
+            }
+        }
+        
+        if (/ما هو|ما هي|تعريف/.test(text)) {
+            primary = 'تعريف';
+            confidence = 0.8;
+        } else if (/أين|مكان|موقع|عنوان/.test(text)) {
+            primary = 'موقع';
+            confidence = 0.85;
+        } else if (/كام|كم|عدد|رقم/.test(text)) {
+            primary = 'كمية';
+            confidence = 0.8;
+        } else if (/كيف|طريقة|خطوات|إجراءات/.test(text)) {
+            primary = 'طريقة';
+            confidence = 0.75;
+        } else if (/هل|؟|\?/.test(text)) {
+            primary = 'سؤال_نعم_لا';
+            confidence = 0.7;
+        } else if (/أريد|أبحث عن|عايز|عاوز/.test(text)) {
+            primary = 'بحث_عن_نشاط';
+            confidence = 0.75;
+        } else if (/ترخيص|رخصة|إجازة|تصريح/.test(text)) {
+            primary = 'بحث_عن_تراخيص';
+            confidence = 0.9;
+        } else if (/منطقة|صناعية|مدينة|حى/.test(text)) {
+            primary = 'بحث_عن_منطقة';
+            confidence = 0.85;
+        } else if (/104|قرار|حافز|حوافز|دعم/.test(text)) {
+            primary = 'بحث_عن_حوافز';
+            confidence = 0.9;
+        } else if (/سعر|تكلفة|بكام|ثمن/.test(text)) {
+            primary = 'تكلفة';
+            confidence = 0.8;
+        } else if (/مدة|زمن|وقت|فترة/.test(text)) {
+            primary = 'مدة';
+            confidence = 0.7;
+        }
+        
+        if (/مساحة|حجم|كبير|صغير|متر/.test(text)) {
+            secondary = 'معرفة_المساحة';
+        } else if (/متطلبات|شروط|اشتراطات|مواصفات/.test(text)) {
+            secondary = 'معرفة_المتطلبات';
+        } else if (/جهة|جهات|مختص|مسئول/.test(text)) {
+            secondary = 'معرفة_الجهة';
+        }
+        
+        return {
+            primary,
+            secondary,
+            confidence,
+            patterns: matchedPatterns,
+            keywords: this.extractIntentKeywords(text),
+            complexity: queryAnalysis.complexity,
+            timestamp: Date.now()
+        };
+    }
+    
+    extractIntentKeywords(text) {
+        const keywords = [];
+        const stopWords = ['من', 'في', 'على', 'إلى', 'أن', 'هو', 'هي'];
+        
+        text.split(/\s+/).forEach(word => {
+            if (word.length > 2 && !stopWords.includes(word)) {
+                keywords.push(word);
+            }
+        });
+        
+        return [...new Set(keywords)];
+    }
+    
+    loadPatterns() {
+        try {
+            const saved = localStorage.getItem('intent_patterns_v5');
+            if (saved) {
+                const patterns = JSON.parse(saved);
+                this.intentPatterns = new Map(patterns);
+            }
+        } catch (e) {
+            console.warn('⚠️ فشل تحميل أنماط النية:', e);
+        }
+    }
+}
+
+// 🔥 نظام الملاحظات الذكية
+class IntelligentNotesSystem {
+    constructor() {
+        this.noteTemplates = this.createNoteTemplates();
+        this.learningEnabled = true;
+    }
+    
+    async initialize() {}
+    
+    createNoteTemplates() {
+        return {
+            high_confidence: [
+                'نتيجة ممتازة - تطابق قوي',
+                'معلومات دقيقة وموثوقة',
+                'مصدر موثوق به'
+            ],
+            medium_confidence: [
+                'نتيجة جيدة - قد تحتاج للتأكيد',
+                'معلومات مفيدة للمراجعة',
+                'قيمة إضافية للبحث'
+            ],
+            low_confidence: [
+                'اقتراح أولي - يحتاج للتحقق',
+                'معلومات عامة للمراجعة',
+                'بداية جيدة للبحث'
+            ],
+            decision_link: [
+                'مرتبط بقرار 104 للحوافز',
+                'يمكن أن يستفيد من الحوافز الاستثمارية',
+                'مشمول في برامج الدعم الحكومي'
+            ],
+            area_link: [
+                'مناسب للمناطق الصناعية',
+                'يتوافق مع سياسات التنمية',
+                'مرتبط بخطط التنمية المحلية'
+            ],
+            licensing: [
+                'يتطلب تراخيص خاصة',
+                'يخضع لاشتراطات جهات متعددة',
+                'يحتاج موافقات رسمية'
+            ],
+            technical: [
+                'يحتاج متطلبات فنية',
+                'يخضع للمواصفات القياسية',
+                'يتطلب خبرة تقنية'
+            ]
+        };
+    }
+    
+    generateIntelligentNotes(result, queryAnalysis, intentAnalysis, dbKey) {
+        const notes = [];
+        
+        const score = result.score || result.finalScore || 0;
+        if (score >= 0.8) {
+            notes.push(this.getRandomNote('high_confidence'));
+        } else if (score >= 0.6) {
+            notes.push(this.getRandomNote('medium_confidence'));
+        } else if (score >= 0.4) {
+            notes.push(this.getRandomNote('low_confidence'));
+        }
+        
+        if (intentAnalysis) {
+            if (intentAnalysis.primary === 'بحث_عن_حوافز' && dbKey === 'activities') {
+                notes.push(this.getRandomNote('decision_link'));
+            }
+            
+            if (intentAnalysis.primary === 'بحث_عن_تراخيص') {
+                notes.push(this.getRandomNote('licensing'));
+            }
+            
+            if (intentAnalysis.secondary === 'معرفة_المتطلبات') {
+                notes.push(this.getRandomNote('technical'));
+            }
+        }
+        
+        const text = result.metadata?.text_preview || '';
+        if (text.includes('منطقة') || text.includes('صناعية')) {
+            notes.push(this.getRandomNote('area_link'));
+        }
+        
+        if (result.smartLinked) {
+            notes.push(`معلومات إضافية من الربط الذكي (ثقة: ${(result.linkingConfidence * 100).toFixed(0)}%)`);
+        }
+        
+        return notes.slice(0, 3);
+    }
+    
+    getRandomNote(category) {
+        const notes = this.noteTemplates[category];
+        if (!notes || notes.length === 0) return '';
+        return notes[Math.floor(Math.random() * notes.length)];
+    }
+}
+
+// 🔥 التخزين المؤقت متعدد المستويات
+class MultiLevelCache {
+    constructor() {
+        this.shortTerm = new Map();
+        this.longTerm = new Map();
+        this.patternCache = new Map();
+        this.maxSize = 100;
+    }
+    
+    get(query, options) {
+        const cacheKey = this.createCacheKey(query, options);
+        
+        const shortTermItem = this.shortTerm.get(cacheKey);
+        if (shortTermItem && Date.now() - shortTermItem.timestamp < 300000) {
+            return {
+                results: shortTermItem.results,
+                cacheTime: shortTermItem.cacheTime
+            };
+        }
+        
+        const longTermItem = this.longTerm.get(cacheKey);
+        if (longTermItem && Date.now() - longTermItem.timestamp < 86400000) {
+            this.shortTerm.set(cacheKey, longTermItem);
+            return {
+                results: longTermItem.results,
+                cacheTime: longTermItem.cacheTime
+            };
+        }
+        
+        return null;
+    }
+    
+    set(query, results, cacheTime, options) {
+        const cacheKey = this.createCacheKey(query, options);
+        const cacheItem = {
+            results: results,
+            cacheTime: cacheTime,
+            timestamp: Date.now(),
+            query: query,
+            options: options
+        };
+        
+        this.shortTerm.set(cacheKey, cacheItem);
+        
+        if (this.isWorthyOfLongTerm(results)) {
+            this.longTerm.set(cacheKey, cacheItem);
+            
+            if (this.longTerm.size > this.maxSize) {
+                this.cleanupLongTermCache();
+            }
+        }
+        
+        if (this.shortTerm.size % 10 === 0) {
+            this.saveToStorage();
+        }
+    }
+    
+    createCacheKey(query, options) {
+        const optionsStr = JSON.stringify(options || {});
+        return `${query}_${this.hashString(optionsStr)}`;
+    }
+    
+    hashString(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = ((hash << 5) - hash) + str.charCodeAt(i);
+            hash |= 0;
+        }
+        return hash.toString(16);
+    }
+    
+    isWorthyOfLongTerm(results) {
+        const hasGoodResults = 
+            results.activities.length > 0 || 
+            results.decision104.length > 0 || 
+            results.industrial.length > 0;
+        
+        const hasHighConfidence = 
+            results.activities.some(r => r.score > 0.7) ||
+            results.decision104.some(r => r.score > 0.7) ||
+            results.industrial.some(r => r.score > 0.7);
+        
+        return hasGoodResults && hasHighConfidence;
+    }
+    
+    cleanupLongTermCache() {
+        const entries = Array.from(this.longTerm.entries());
+        entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+        
+        const toRemove = entries.slice(0, Math.floor(this.maxSize * 0.1));
+        toRemove.forEach(([key]) => this.longTerm.delete(key));
+    }
+    
+    async load() {
+        try {
+            const saved = localStorage.getItem('vector_engine_cache_v5');
+            if (saved) {
+                const data = JSON.parse(saved);
+                this.longTerm = new Map(data.longTerm || []);
+                console.log(`📦 تم تحميل ${this.longTerm.size} عنصر من التخزين المؤقت`);
+            }
+        } catch (e) {
+            console.warn('⚠️ فشل تحميل التخزين المؤقت:', e);
+        }
+    }
+    
+    saveToStorage() {
+        try {
+            const data = {
+                longTerm: Array.from(this.longTerm.entries()),
+                timestamp: Date.now(),
+                version: 'v5'
+            };
+            localStorage.setItem('vector_engine_cache_v5', JSON.stringify(data));
+        } catch (e) {
+            console.warn('⚠️ فشل حفظ التخزين المؤقت:', e);
+        }
+    }
+    
+    size() {
+        return this.longTerm.size + this.shortTerm.size;
+    }
+}
+
+// 🔥 معالج النصوص العربي المحسن
+class EnhancedArabicTextProcessor {
+    constructor() {
+        this.EGYPTIAN_GOVERNORATES = [
+            'القاهرة', 'الإسكندرية', 'الجيزة', 'القليوبية', 'الشرقية',
+            'الدقهلية', 'البحيرة', 'المنوفية', 'الغربية', 'كفر الشيخ',
+            'دمياط', 'بورسعيد', 'الإسماعيلية', 'السويس', 'شمال سيناء',
+            'جنوب سيناء', 'الفيوم', 'بني سويف', 'المنيا', 'أسيوط',
+            'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'البحر الأحمر', 'الوادي الجديد', 'مطروح'
+        ];
+        
+        this.INDUSTRIAL_AREA_PATTERNS = [
+            { name: 'العاشر من رمضان', aliases: ['العاشر', '10 رمضان'], egyptianNames: ['عاشر رمضان'] },
+            { name: 'السادات', aliases: ['مدينة السادات'], egyptianNames: ['السادات'] },
+            { name: 'برج العرب', aliases: ['برج'], egyptianNames: ['برج العرب'] },
+            { name: 'زهراء المعادي', aliases: ['زهراء', 'الزهراء'], egyptianNames: ['الزهراء'] },
+            { name: '6 أكتوبر', aliases: ['أكتوبر', 'ستة أكتوبر'], egyptianNames: ['ستة اكتوبر'] },
+            { name: 'بدر', aliases: ['مدينة بدر'], egyptianNames: ['بدر'] },
+            { name: 'العبور', aliases: ['مدينة العبور'], egyptianNames: ['العبور'] }
+        ];
+        
+        this.ACTIVITY_PATTERNS = [
+            { formal: 'فندق', egyptian: ['أوتيل', 'فندق سياحي'], category: 'سياحة', weight: 1.5 },
+            { formal: 'مصنع', egyptian: ['معمل', 'مصنع'], category: 'صناعي', weight: 1.4 },
+            { formal: 'مخبز', egyptian: ['فرن', 'مخبز'], category: 'غذائي', weight: 1.3 },
+            { formal: 'ورشة', egyptian: ['ورشة', 'وراشة'], category: 'صناعي', weight: 1.2 },
+            { formal: 'مطعم', egyptian: ['مطعم', 'اكل'], category: 'غذائي', weight: 1.3 },
+            { formal: 'صيدلية', egyptian: ['صيدلية', 'دوا'], category: 'صحي', weight: 1.4 }
+        ];
+        
+        this.EGYPTIAN_STOP_WORDS = [
+            'يعني', 'خلاص', 'طب', 'تمام', 'يا', 'يا ريت',
+            'مش', 'ممكن', 'بس', 'على فكرة', 'أصل', 'بالظبط',
+            'بصراحة', 'طيب', 'أها', 'ايوة', 'اه', 'لا'
+        ];
+    }
+    
+    normalizeEgyptianText(text) {
+        if (!text || !text.trim()) return '';
+        
+        let normalized = text.toLowerCase();
+        
+        const dialectMap = {
+            'كام': 'كم',
+            'عايز': 'أريد',
+            'عاوز': 'أريد',
+            'عيز': 'أريد',
+            'قول': 'قل',
+            'قولي': 'قل لي',
+            'ايوه': 'نعم',
+            'لأ': 'لا',
+            'مش': 'ليس',
+            'يعني ايه': 'ما معنى',
+            'ايه هو': 'ما هو',
+            'بكام': 'بكم',
+            'فين': 'أين',
+            'عامل': 'يعمل',
+            'هيعمل': 'سيعمل'
+        };
+        
+        Object.entries(dialectMap).forEach(([dialect, formal]) => {
+            normalized = normalized.replace(new RegExp(dialect, 'g'), formal);
+        });
+        
+        this.EGYPTIAN_STOP_WORDS.forEach(word => {
+            const regex = new RegExp(`\\b${word}\\b`, 'g');
+            normalized = normalized.replace(regex, '');
+        });
+        
+        normalized = normalized.replace(/\s+/g, ' ').trim();
+        
+        return normalized;
+    }
+}
+
+// 🔥 نظام المراقبة
+class PerformanceMonitor {
+    constructor() {
+        this.metrics = {
+            startTime: Date.now(),
+            searches: [],
+            errors: []
+        };
+    }
+    
+    start() {
+        console.log('📊 نظام المراقبة نشط');
+    }
+    
+    recordSearch(duration, resultsCount) {
+        this.metrics.searches.push({
+            timestamp: Date.now(),
+            duration,
+            resultsCount
+        });
+    }
+    
+    recordError(error) {
+        this.metrics.errors.push({
+            timestamp: Date.now(),
+            error: error.message || String(error)
+        });
+    }
+    
+    getReport() {
+        const totalSearches = this.metrics.searches.length;
+        const avgDuration = totalSearches > 0 
+            ? this.metrics.searches.reduce((sum, s) => sum + s.duration, 0) / totalSearches
+            : 0;
+        
+        return {
+            uptime: Date.now() - this.metrics.startTime,
+            totalSearches,
+            averageDuration: avgDuration.toFixed(2) + 'ms',
+            errorCount: this.metrics.errors.length
+        };
+    }
+}
+
+// 🔥 نظام التحسين الذاتي
+class SelfOptimizer {
+    constructor() {
+        this.optimizationHistory = [];
+    }
+    
+    optimizeSearch(config, performanceData) {
+        // إجراء تحسينات بسيطة بناءً على الأداء
+        return config;
+    }
+}
+
+// ==================== الفئة الرئيسية ====================
+
 class IntelligentVectorEngineV5 {
     constructor() {
         console.log("🧠 تهيئة Vector Engine V5...");
@@ -42,6 +501,15 @@ class IntelligentVectorEngineV5 {
         // 🔥 الجديد: نظام التخزين المؤقت متعدد المستويات
         this.smartCache = new MultiLevelCache();
         
+        // 🔥 الجديد: معالج النصوص العربي المحسن
+        this.textProcessor = new EnhancedArabicTextProcessor();
+        
+        // 🔥 الجديد: نظام التتبع والمراقبة
+        this.monitor = new PerformanceMonitor();
+        
+        // 🔥 الجديد: نظام التحسين الذاتي
+        this.optimizer = new SelfOptimizer();
+        
         // إعدادات البحث المتقدم المحسنة
         this.searchConfig = {
             vectorWeights: {
@@ -50,14 +518,14 @@ class IntelligentVectorEngineV5 {
                 'key_phrases': 0.85,
                 'summary': 0.8,
                 'no_stopwords': 0.75,
-                'enhanced': 1.1 // 🔥 جديد: وزن المتجهات المحسنة
+                'enhanced': 1.1
             },
-            minConfidence: 0.15, // 🔥 مخفض للسماح بمزيد من النتائج
-            maxResults: 20, // 🔥 زيادة عدد النتائج
+            minConfidence: 0.15,
+            maxResults: 20,
             searchLevels: {
-                fast: 50,    // البحث السريع: أول 50
-                deep: 20,    // البحث العميق: أول 20
-                final: 15    // النتائج النهائية: 15
+                fast: 50,
+                deep: 20,
+                final: 15
             },
             enableSmartFeatures: true,
             enableCrossLinking: true,
@@ -72,18 +540,9 @@ class IntelligentVectorEngineV5 {
             confidenceStats: [],
             ambiguousResolutions: new Map(),
             crossLinks: new Map(),
-            intentPatterns: new Map(), // 🔥 جديد: أنماط النية
-            semanticRelations: new Map() // 🔥 جديد: علاقات دلالية
+            intentPatterns: new Map(),
+            semanticRelations: new Map()
         };
-        
-        // معالج النصوص العربية المتقدم المحسن
-        this.textProcessor = new EnhancedArabicTextProcessor();
-        
-        // 🔥 الجديد: نظام التتبع والمراقبة
-        this.monitor = new PerformanceMonitor();
-        
-        // 🔥 الجديد: نظام التحسين الذاتي
-        this.optimizer = new SelfOptimizer();
         
         this.isReady = false;
         this.initializationTime = null;
@@ -190,7 +649,6 @@ class IntelligentVectorEngineV5 {
             loadPromises.push(this.loadSingleDatabase(key, url));
         }
         
-        // التحميل المتوازي لجميع القواعد
         await Promise.all(loadPromises);
         
         console.log("✅ تم تحميل جميع قواعد المتجهات");
@@ -207,13 +665,11 @@ class IntelligentVectorEngineV5 {
             
             let finalDataArray = null;
 
-            // البحث الذكي في الملف
             if (module.default?.data) {
                 finalDataArray = module.default.data;
             } else if (module[dbKey + 'VectorsData']?.data) {
                 finalDataArray = module[dbKey + 'VectorsData'].data;
             } else {
-                // البحث في جميع القيم
                 const values = Object.values(module);
                 for (const val of values) {
                     if (val && val.data && Array.isArray(val.data)) {
@@ -232,7 +688,6 @@ class IntelligentVectorEngineV5 {
                 return;
             }
             
-            // 🔥 الجديد: معالجة محسنة للبيانات
             this.processEnhancedData(dbKey, finalDataArray);
             
             console.log(`✅ ${dbKey}: تم تحميل ${finalDataArray.length} سجل`);
@@ -294,7 +749,6 @@ class IntelligentVectorEngineV5 {
     createEnhancedEmbeddings(originalEmbeddings, item) {
         const enhanced = { ...originalEmbeddings };
         
-        // إضافة متجه محسن يجمع بين كل الأنواع
         if (originalEmbeddings.full && originalEmbeddings.contextual) {
             enhanced.enhanced = this.combineEmbeddings(
                 originalEmbeddings.full,
@@ -309,7 +763,6 @@ class IntelligentVectorEngineV5 {
     combineEmbeddings(embedding1, embedding2, embedding3) {
         const combined = new Array(embedding1.length);
         for (let i = 0; i < embedding1.length; i++) {
-            // متوسط مرجح
             combined[i] = (embedding1[i] * 0.4) + (embedding2[i] * 0.4) + (embedding3[i] * 0.2);
         }
         return combined;
@@ -317,7 +770,7 @@ class IntelligentVectorEngineV5 {
     
     // 🔥 الجديد: دوال معالجة البيانات
     calculateQualityScore(item) {
-        let score = 0.5; // أساسي
+        let score = 0.5;
         
         const text = item.original_data?.text_preview || '';
         
@@ -354,7 +807,7 @@ class IntelligentVectorEngineV5 {
             tags.push('حوافز', 'استثمار', 'قرار 104');
         }
         
-        return [...new Set(tags)]; // إزالة التكرارات
+        return [...new Set(tags)];
     }
     
     detectEntityTypes(item, dbKey) {
@@ -387,7 +840,6 @@ class IntelligentVectorEngineV5 {
         const relationships = [];
         const text = item.original_data?.text_preview || '';
         
-        // علاقات مع قواعد بيانات أخرى
         if (text.includes('فندق') && dbKey === 'activities') {
             relationships.push({
                 type: 'requires_license',
@@ -418,16 +870,14 @@ class IntelligentVectorEngineV5 {
     enhanceTextForDisplay(item) {
         let text = item.original_data?.text_preview || '';
         
-        // تحسين العرض
         text = text.replace(/\s+/g, ' ').trim();
         
-        // إضافة تصنيفات
         const category = this.detectCategory(item, 'unknown');
         if (category !== 'unknown') {
             text += ` [${category}]`;
         }
         
-        return text.substring(0, 150); // قص النص الطويل
+        return text.substring(0, 150);
     }
     
     generateSemanticSummary(item) {
@@ -436,7 +886,6 @@ class IntelligentVectorEngineV5 {
         
         if (words.length <= 10) return text;
         
-        // أخذ أهم الكلمات (الأطول والأكثر تكراراً)
         const importantWords = words
             .filter(w => w.length > 3)
             .slice(0, 7)
@@ -449,19 +898,16 @@ class IntelligentVectorEngineV5 {
         const entities = [];
         const text = item.original_data?.text_preview || '';
         
-        // المحافظات
         const governorates = ['القاهرة', 'الإسكندرية', 'الجيزة', 'الشرقية', 'الدقهلية'];
         governorates.forEach(gov => {
             if (text.includes(gov)) entities.push({ type: 'governorate', name: gov });
         });
         
-        // المناطق الصناعية
         const areas = ['العاشر', 'السادات', 'برج العرب', 'زهراء', 'بدر', 'العبور', '6 أكتوبر'];
         areas.forEach(area => {
             if (text.includes(area)) entities.push({ type: 'area', name: area });
         });
         
-        // الأرقام المهمة
         const numbers = text.match(/\d+/g);
         if (numbers) {
             numbers.forEach(num => {
@@ -516,7 +962,6 @@ class IntelligentVectorEngineV5 {
         };
         
         this.vectorDB[dbKey].metadata.forEach((meta, idx) => {
-            // الفهرس حسب التصنيف
             if (meta.category) {
                 if (!index.byCategory.has(meta.category)) {
                     index.byCategory.set(meta.category, []);
@@ -524,7 +969,6 @@ class IntelligentVectorEngineV5 {
                 index.byCategory.get(meta.category).push(idx);
             }
             
-            // الفهرس حسب الكيانات
             if (meta.key_entities) {
                 meta.key_entities.forEach(entity => {
                     const key = `${entity.type}_${entity.name || entity.value}`;
@@ -536,7 +980,6 @@ class IntelligentVectorEngineV5 {
             }
         });
         
-        // تخزين الفهرس
         this.vectorDB[dbKey].quickIndex = index;
         
         console.log(`📊 فهرس ${dbKey}: ${index.byCategory.size} تصنيف، ${index.byEntity.size} كيان`);
@@ -561,7 +1004,6 @@ class IntelligentVectorEngineV5 {
         console.log(`${'═'.repeat(70)}`);
         
         try {
-            // 🔥 الجديد: التحقق من التخزين المؤقت أولاً
             const cachedResults = this.smartCache.get(query, options);
             if (cachedResults) {
                 console.log(`♻️ استخدام النتائج المخزنة (${cachedResults.cacheTime}ms)`);
@@ -569,20 +1011,13 @@ class IntelligentVectorEngineV5 {
                 return cachedResults.results;
             }
             
-            // 1. تحليل متقدم للاستعلام
             const queryAnalysis = this.analyzeQueryWithAI(query, options);
-            
-            // 2. تحديد نية ذكية
             const intentAnalysis = this.intentAnalyzer.deepAnalyze(query, queryAnalysis);
             console.log(`🎯 النية: ${intentAnalysis.primary} (${(intentAnalysis.confidence * 100).toFixed(0)}%)`);
             
-            // 3. استخراج كيانات متقدم
             const entities = await this.extractSmartEntities(query, queryAnalysis, intentAnalysis);
-            
-            // 4. إنشاء متجه الاستعلام المحسن
             const queryVector = await this.getEnhancedVector(query, intentAnalysis);
             
-            // 5. البحث متعدد المستويات
             const searchResults = await this.multiLevelIntelligentSearch(
                 queryVector, 
                 entities, 
@@ -590,43 +1025,33 @@ class IntelligentVectorEngineV5 {
                 intentAnalysis
             );
             
-            // 6. 🔥 الجديد: ربط ذكي عبر القواعد
             if (this.searchConfig.enableCrossLinking) {
                 await this.performCrossDatabaseLinking(searchResults, queryAnalysis);
             }
             
-            // 7. 🔥 الجديد: إضافة ملاحظات ذكية
             this.addIntelligentNotes(searchResults, queryAnalysis, intentAnalysis);
             
-            // 8. تطبيق العتبة الذكية
             const smartThreshold = this.calculateSmartThreshold(
                 queryAnalysis, 
                 intentAnalysis, 
                 searchResults
             );
             
-            // 9. ترشيح النتائج
             const filteredResults = this.filterWithIntelligence(searchResults, smartThreshold);
             
-            // 10. 🔥 الجديد: تعزيز بالربط الذكي
             if (this.linkingEnabled && this.dataLinker) {
                 await this.enhanceWithSmartLinking(filteredResults, query, queryAnalysis);
             }
             
-            // 11. تعزيز بالبيانات الوصفية
             const enhancedResults = this.enhanceWithSmartMetadata(filteredResults, queryAnalysis, intentAnalysis);
             
-            // 12. التعلم من البحث
             this.learnFromIntelligentSearch(query, enhancedResults, queryAnalysis, intentAnalysis);
             
-            // 13. 🔥 الجديد: التخزين في الذاكرة المؤقتة
             const searchDuration = Date.now() - searchStartTime;
             this.smartCache.set(query, enhancedResults, searchDuration, options);
             
-            // 14. تحديث الإحصائيات
             this.updateSearchStats(searchDuration, enhancedResults, intentAnalysis);
             
-            // 15. إرجاع النتائج المحسنة
             return this.formatIntelligentResults(enhancedResults, queryAnalysis, intentAnalysis, searchDuration);
             
         } catch (error) {
@@ -635,285 +1060,8 @@ class IntelligentVectorEngineV5 {
         }
     }
     
-    // 🔥 الجديد: البحث متعدد المستويات الذكي
-    async multiLevelIntelligentSearch(queryVector, entities, queryAnalysis, intentAnalysis) {
-        console.log("🎯 بدء البحث متعدد المستويات الذكي...");
-        
-        const results = {
-            activities: { fast: [], deep: [], final: [] },
-            decision104: { fast: [], deep: [], final: [] },
-            industrial: { fast: [], deep: [], final: [] }
-        };
-        
-        // المستوى 1: البحث السريع (التغطية الواسعة)
-        const fastSearchStart = Date.now();
-        await this.fastLevelSearch(queryVector, entities, queryAnalysis, results);
-        const fastDuration = Date.now() - fastSearchStart;
-        console.log(`⚡ المستوى 1 (سريع): ${fastDuration}ms`);
-        
-        // المستوى 2: البحث العميق (السياق والتخصص)
-        const deepSearchStart = Date.now();
-        await this.deepLevelSearch(results, queryAnalysis, intentAnalysis);
-        const deepDuration = Date.now() - deepSearchStart;
-        console.log(`🔍 المستوى 2 (عميق): ${deepDuration}ms`);
-        
-        // المستوى 3: إعادة الترتيب الذكي
-        const rerankStart = Date.now();
-        await this.smartReranking(results, queryAnalysis, intentAnalysis);
-        const rerankDuration = Date.now() - rerankStart;
-        console.log(`🧠 المستوى 3 (ترتيب): ${rerankDuration}ms`);
-        
-        // دمج النتائج النهائية
-        const finalResults = {
-            activities: results.activities.final,
-            decision104: results.decision104.final,
-            industrial: results.industrial.final
-        };
-        
-        return finalResults;
-    }
+    // ==================== دوال مساعدة ====================
     
-    async fastLevelSearch(queryVector, entities, queryAnalysis, results) {
-        const databases = ['activities', 'decision104', 'industrial'];
-        const searchPromises = databases.map(db => 
-            this.searchDatabaseFast(db, queryVector, entities, queryAnalysis)
-        );
-        
-        const [activities, decision104, industrial] = await Promise.all(searchPromises);
-        
-        results.activities.fast = activities.slice(0, this.searchConfig.searchLevels.fast);
-        results.decision104.fast = decision104.slice(0, this.searchConfig.searchLevels.fast);
-        results.industrial.fast = industrial.slice(0, this.searchConfig.searchLevels.fast);
-    }
-    
-    async searchDatabaseFast(dbKey, queryVector, entities, queryAnalysis) {
-        const database = this.vectorDB[dbKey];
-        if (!database.vectors || database.vectors.length === 0) {
-            return [];
-        }
-        
-        let scores = [];
-        const vectorCount = database.vectors.length;
-        
-        // 🔥 الجديد: استخدام الفهرس السريع إذا كان مناسباً
-        if (queryAnalysis.keywords.length > 0 && database.quickIndex) {
-            const indexedResults = this.searchUsingQuickIndex(dbKey, queryAnalysis.keywords);
-            scores.push(...indexedResults);
-        }
-        
-        // البحث التقليدي للمتبقي
-        const remainingCount = this.searchConfig.searchLevels.fast - scores.length;
-        if (remainingCount > 0) {
-            const traditionalResults = await this.traditionalVectorSearch(
-                dbKey, 
-                queryVector, 
-                entities, 
-                queryAnalysis,
-                remainingCount
-            );
-            scores.push(...traditionalResults);
-        }
-        
-        return scores
-            .sort((a, b) => b.score - a.score)
-            .slice(0, this.searchConfig.searchLevels.fast);
-    }
-    
-    // 🔥 الجديد: البحث باستخدام الفهرس السريع
-    searchUsingQuickIndex(dbKey, keywords) {
-        const database = this.vectorDB[dbKey];
-        if (!database.quickIndex) return [];
-        
-        const scoredItems = new Map();
-        
-        keywords.forEach(keyword => {
-            // البحث في الفهرس حسب التصنيف
-            for (const [category, indices] of database.quickIndex.byCategory) {
-                if (category.includes(keyword)) {
-                    indices.forEach(idx => {
-                        const currentScore = scoredItems.get(idx) || 0;
-                        scoredItems.set(idx, currentScore + 0.3);
-                    });
-                }
-            }
-            
-            // البحث في الفهرس حسب الكيانات
-            for (const [entityKey, indices] of database.quickIndex.byEntity) {
-                if (entityKey.includes(keyword)) {
-                    indices.forEach(idx => {
-                        const currentScore = scoredItems.get(idx) || 0;
-                        scoredItems.set(idx, currentScore + 0.4);
-                    });
-                }
-            }
-        });
-        
-        // تحويل إلى مصفوفة نتائج
-        return Array.from(scoredItems.entries())
-            .map(([idx, score]) => ({
-                id: database.vectors[idx].id,
-                score: Math.min(1, score),
-                metadata: database.metadata[idx],
-                searchMethod: 'quick_index'
-            }));
-    }
-    
-    async traditionalVectorSearch(dbKey, queryVector, entities, queryAnalysis, limit) {
-        const database = this.vectorDB[dbKey];
-        let scores = [];
-        
-        // تحديد عدد العناصر للبحث (أول N عنصر للسرعة)
-        const searchLimit = Math.min(database.vectors.length, limit * 3);
-        
-        for (let i = 0; i < searchLimit; i++) {
-            const item = database.vectors[i];
-            let maxScore = 0;
-            let bestVectorType = '';
-            
-            // البحث في جميع أنواع المتجهات
-            for (const [vectorType, vector] of Object.entries(item.embeddings)) {
-                if (!vector || !Array.isArray(vector)) continue;
-                
-                const similarity = this.cosineSimilarity(queryVector, vector);
-                const weight = this.searchConfig.vectorWeights[vectorType] || 0.5;
-                const weightedScore = similarity * weight;
-                
-                if (weightedScore > maxScore) {
-                    maxScore = weightedScore;
-                    bestVectorType = vectorType;
-                }
-            }
-            
-            if (maxScore > 0) {
-                scores.push({
-                    id: item.id,
-                    score: maxScore,
-                    vectorType: bestVectorType,
-                    db: dbKey,
-                    metadata: database.metadata.find(m => m.id === item.id),
-                    searchMethod: 'vector_similarity'
-                });
-            }
-        }
-        
-        // تعزيز بالكيانات
-        if (entities.length > 0) {
-            scores = this.boostWithEntities(scores, entities, dbKey);
-        }
-        
-        return scores.sort((a, b) => b.score - a.score).slice(0, limit);
-    }
-    
-    async deepLevelSearch(results, queryAnalysis, intentAnalysis) {
-        // البحث العميق في أفضل نتائج المستوى السريع
-        for (const dbKey of ['activities', 'decision104', 'industrial']) {
-            if (results[dbKey].fast.length > 0) {
-                results[dbKey].deep = await this.performDeepAnalysis(
-                    results[dbKey].fast.slice(0, this.searchConfig.searchLevels.deep),
-                    queryAnalysis,
-                    intentAnalysis,
-                    dbKey
-                );
-            }
-        }
-    }
-    
-    async performDeepAnalysis(fastResults, queryAnalysis, intentAnalysis, dbKey) {
-        return fastResults.map(result => {
-            // تحليل سياقي عميق
-            const contextScore = this.analyzeContextualRelevance(result, queryAnalysis, intentAnalysis);
-            const semanticScore = this.analyzeSemanticMatch(result, queryAnalysis);
-            const intentScore = this.analyzeIntentMatch(result, intentAnalysis);
-            
-            // حساب النتيجة النهائية
-            const finalScore = (
-                result.score * 0.5 +
-                contextScore * 0.3 +
-                semanticScore * 0.1 +
-                intentScore * 0.1
-            );
-            
-            return {
-                ...result,
-                finalScore: Math.min(1, finalScore),
-                deepAnalysis: {
-                    contextScore,
-                    semanticScore,
-                    intentScore,
-                    analysis: this.generateDeepAnalysisText(result, queryAnalysis, intentAnalysis)
-                }
-            };
-        }).sort((a, b) => b.finalScore - a.finalScore);
-    }
-    
-    async smartReranking(results, queryAnalysis, intentAnalysis) {
-        // إعادة ترتيب ذكية بناءً على عوامل متعددة
-        for (const dbKey of ['activities', 'decision104', 'industrial']) {
-            if (results[dbKey].deep.length > 0) {
-                results[dbKey].final = this.intelligentRerank(
-                    results[dbKey].deep,
-                    queryAnalysis,
-                    intentAnalysis,
-                    dbKey
-                ).slice(0, this.searchConfig.searchLevels.final);
-            }
-        }
-    }
-    
-    intelligentRerank(results, queryAnalysis, intentAnalysis, dbKey) {
-        return results.map(result => {
-            let rerankScore = result.finalScore;
-            const boosts = [];
-            const penalties = [];
-            
-            // عوامل التعزيز
-            if (result.metadata?.key_entities?.length > 0) {
-                const entityBoost = result.metadata.key_entities.length * 0.05;
-                rerankScore += entityBoost;
-                boosts.push(`كيانات: +${(entityBoost * 100).toFixed(0)}%`);
-            }
-            
-            if (result.metadata?.semantic_tags?.some(tag => 
-                queryAnalysis.keywords.some(kw => tag.includes(kw))
-            )) {
-                rerankScore += 0.1;
-                boosts.push('مطابقة دلالية: +10%');
-            }
-            
-            if (result.deepAnalysis?.intentScore > 0.7) {
-                rerankScore += 0.15;
-                boosts.push('مطابقة نية: +15%');
-            }
-            
-            if (this.searchConfig.enableSmartFeatures) {
-                const smartBoost = this.calculateSmartBoost(result, queryAnalysis);
-                rerankScore += smartBoost;
-                if (smartBoost > 0) {
-                    boosts.push(`ذكاء: +${(smartBoost * 100).toFixed(0)}%`);
-                }
-            }
-            
-            // عوامل الخصم
-            if (result.score < 0.3) {
-                rerankScore *= 0.8;
-                penalties.push('ثقة منخفضة: -20%');
-            }
-            
-            if (result.metadata?.confidence_score < 0.4) {
-                rerankScore *= 0.9;
-                penalties.push('جودة بيانات: -10%');
-            }
-            
-            return {
-                ...result,
-                rerankedScore: Math.min(1, rerankScore),
-                rerankingFactors: { boosts, penalties },
-                finalDisplayScore: this.formatScoreForDisplay(rerankScore)
-            };
-        }).sort((a, b) => b.rerankedScore - a.rerankedScore);
-    }
-    
-    // 🔥 الجديد: دوال التحليل الذكي
     analyzeQueryWithAI(query, options) {
         const text = query.toLowerCase();
         const words = text.split(/\s+/);
@@ -968,7 +1116,6 @@ class IntelligentVectorEngineV5 {
             .filter(word => word.length > 2 && !stopWords.includes(word))
             .map(word => word.replace(/[.,،؛!?]/g, ''));
         
-        // إضافة كلمات مركبة
         const compoundWords = [];
         for (let i = 0; i < words.length - 1; i++) {
             compoundWords.push(words[i] + ' ' + words[i + 1]);
@@ -1027,12 +1174,10 @@ class IntelligentVectorEngineV5 {
         return ambiguousCount > 0 && (ambiguousCount / words.length) > 0.3;
     }
     
-    // 🔥 الجديد: استخراج كيانات ذكي
     async extractSmartEntities(query, queryAnalysis, intentAnalysis) {
         const entities = [];
         const text = query.toLowerCase();
         
-        // 1. الأرقام المهمة
         const numbers = query.match(/\d+/g);
         if (numbers) {
             numbers.forEach(num => {
@@ -1064,7 +1209,6 @@ class IntelligentVectorEngineV5 {
             });
         }
         
-        // 2. المحافظات المصرية
         const governorates = [
             'القاهرة', 'الإسكندرية', 'الجيزة', 'القليوبية', 'الشرقية',
             'الدقهلية', 'البحيرة', 'المنوفية', 'الغربية', 'كفر الشيخ'
@@ -1083,7 +1227,6 @@ class IntelligentVectorEngineV5 {
             }
         });
         
-        // 3. المناطق الصناعية
         const areaPatterns = [
             { name: 'العاشر من رمضان', aliases: ['العاشر', '10 رمضان'], egyptianNames: ['عاشر رمضان'] },
             { name: 'السادات', aliases: ['مدينة السادات'], egyptianNames: ['السادات'] },
@@ -1106,7 +1249,6 @@ class IntelligentVectorEngineV5 {
             }
         });
         
-        // 4. الأنشطة
         const activityPatterns = [
             { formal: 'فندق', egyptian: ['أوتيل', 'فندق سياحي'], category: 'سياحة', weight: 1.5 },
             { formal: 'مصنع', egyptian: ['معمل', 'مصنع'], category: 'صناعي', weight: 1.4 },
@@ -1130,14 +1272,12 @@ class IntelligentVectorEngineV5 {
             }
         });
         
-        // 5. الكيانات المتخصصة من التعلم
         this.learning.entityPatterns.forEach((pattern, key) => {
             if (text.includes(key.toLowerCase()) && !entities.find(e => e.value === pattern.value)) {
                 entities.push({ ...pattern, learned: true });
             }
         });
         
-        // 🔥 الجديد: تحسين الكيانات بناءً على النية
         if (intentAnalysis) {
             entities.forEach(entity => {
                 entity.intentRelevance = this.calculateEntityIntentRelevance(entity, intentAnalysis);
@@ -1147,12 +1287,27 @@ class IntelligentVectorEngineV5 {
         return entities;
     }
     
-    // 🔥 الجديد: إنشاء متجه محسن
+    calculateEntityIntentRelevance(entity, intentAnalysis) {
+        let relevance = 0.5;
+        
+        switch (intentAnalysis.primary) {
+            case 'بحث_عن_تراخيص':
+                if (entity.type === 'activity') relevance += 0.3;
+                break;
+            case 'بحث_عن_منطقة':
+                if (entity.type === 'industrial_area') relevance += 0.3;
+                break;
+            case 'بحث_عن_حوافز':
+                if (entity.type === 'decision') relevance += 0.4;
+                break;
+        }
+        
+        return Math.min(1, relevance);
+    }
+    
     async getEnhancedVector(text, intentAnalysis) {
-        // معالجة مسبقة للنص بناءً على النية
         const processedText = this.preprocessTextForIntent(text, intentAnalysis);
         
-        // استخراج المتجه
         const output = await this.extractor(processedText, { 
             pooling: 'mean', 
             normalize: true 
@@ -1160,7 +1315,6 @@ class IntelligentVectorEngineV5 {
         
         const baseVector = Array.from(output.data);
         
-        // 🔥 الجديد: تحسين المتجه بناءً على النية
         if (intentAnalysis && this.searchConfig.enableSmartFeatures) {
             return this.enhanceVectorWithIntent(baseVector, intentAnalysis);
         }
@@ -1171,7 +1325,6 @@ class IntelligentVectorEngineV5 {
     preprocessTextForIntent(text, intentAnalysis) {
         let processed = text;
         
-        // تحسين النص بناءً على النية
         switch (intentAnalysis.primary) {
             case 'بحث_عن_تراخيص':
                 processed += ' ترخيص رخصة إجازة تصريح';
@@ -1184,22 +1337,426 @@ class IntelligentVectorEngineV5 {
                 break;
         }
         
-        return processed.substring(0, 500); // قص النص الطويل
+        return processed.substring(0, 500);
     }
     
     enhanceVectorWithIntent(baseVector, intentAnalysis) {
-        // تحسين طفيف للمتجه بناءً على النية
         const enhanced = [...baseVector];
         const boostFactor = intentAnalysis.confidence * 0.1;
         
-        // تطبيق تحسين طفيف
         for (let i = 0; i < enhanced.length; i++) {
-            if (i % 3 === 0) { // تحسين انتقائي
+            if (i % 3 === 0) {
                 enhanced[i] *= (1 + boostFactor);
             }
         }
         
         return enhanced;
+    }
+    
+    // 🔥 الجديد: البحث متعدد المستويات الذكي
+    async multiLevelIntelligentSearch(queryVector, entities, queryAnalysis, intentAnalysis) {
+        console.log("🎯 بدء البحث متعدد المستويات الذكي...");
+        
+        const results = {
+            activities: { fast: [], deep: [], final: [] },
+            decision104: { fast: [], deep: [], final: [] },
+            industrial: { fast: [], deep: [], final: [] }
+        };
+        
+        const fastSearchStart = Date.now();
+        await this.fastLevelSearch(queryVector, entities, queryAnalysis, results);
+        const fastDuration = Date.now() - fastSearchStart;
+        console.log(`⚡ المستوى 1 (سريع): ${fastDuration}ms`);
+        
+        const deepSearchStart = Date.now();
+        await this.deepLevelSearch(results, queryAnalysis, intentAnalysis);
+        const deepDuration = Date.now() - deepSearchStart;
+        console.log(`🔍 المستوى 2 (عميق): ${deepDuration}ms`);
+        
+        const rerankStart = Date.now();
+        await this.smartReranking(results, queryAnalysis, intentAnalysis);
+        const rerankDuration = Date.now() - rerankStart;
+        console.log(`🧠 المستوى 3 (ترتيب): ${rerankDuration}ms`);
+        
+        const finalResults = {
+            activities: results.activities.final,
+            decision104: results.decision104.final,
+            industrial: results.industrial.final
+        };
+        
+        return finalResults;
+    }
+    
+    async fastLevelSearch(queryVector, entities, queryAnalysis, results) {
+        const databases = ['activities', 'decision104', 'industrial'];
+        const searchPromises = databases.map(db => 
+            this.searchDatabaseFast(db, queryVector, entities, queryAnalysis)
+        );
+        
+        const [activities, decision104, industrial] = await Promise.all(searchPromises);
+        
+        results.activities.fast = activities.slice(0, this.searchConfig.searchLevels.fast);
+        results.decision104.fast = decision104.slice(0, this.searchConfig.searchLevels.fast);
+        results.industrial.fast = industrial.slice(0, this.searchConfig.searchLevels.fast);
+    }
+    
+    async searchDatabaseFast(dbKey, queryVector, entities, queryAnalysis) {
+        const database = this.vectorDB[dbKey];
+        if (!database.vectors || database.vectors.length === 0) {
+            return [];
+        }
+        
+        let scores = [];
+        const vectorCount = database.vectors.length;
+        
+        if (queryAnalysis.keywords.length > 0 && database.quickIndex) {
+            const indexedResults = this.searchUsingQuickIndex(dbKey, queryAnalysis.keywords);
+            scores.push(...indexedResults);
+        }
+        
+        const remainingCount = this.searchConfig.searchLevels.fast - scores.length;
+        if (remainingCount > 0) {
+            const traditionalResults = await this.traditionalVectorSearch(
+                dbKey, 
+                queryVector, 
+                entities, 
+                queryAnalysis,
+                remainingCount
+            );
+            scores.push(...traditionalResults);
+        }
+        
+        return scores
+            .sort((a, b) => b.score - a.score)
+            .slice(0, this.searchConfig.searchLevels.fast);
+    }
+    
+    // 🔥 الجديد: البحث باستخدام الفهرس السريع
+    searchUsingQuickIndex(dbKey, keywords) {
+        const database = this.vectorDB[dbKey];
+        if (!database.quickIndex) return [];
+        
+        const scoredItems = new Map();
+        
+        keywords.forEach(keyword => {
+            for (const [category, indices] of database.quickIndex.byCategory) {
+                if (category.includes(keyword)) {
+                    indices.forEach(idx => {
+                        const currentScore = scoredItems.get(idx) || 0;
+                        scoredItems.set(idx, currentScore + 0.3);
+                    });
+                }
+            }
+            
+            for (const [entityKey, indices] of database.quickIndex.byEntity) {
+                if (entityKey.includes(keyword)) {
+                    indices.forEach(idx => {
+                        const currentScore = scoredItems.get(idx) || 0;
+                        scoredItems.set(idx, currentScore + 0.4);
+                    });
+                }
+            }
+        });
+        
+        return Array.from(scoredItems.entries())
+            .map(([idx, score]) => ({
+                id: database.vectors[idx].id,
+                score: Math.min(1, score),
+                metadata: database.metadata[idx],
+                searchMethod: 'quick_index'
+            }));
+    }
+    
+    async traditionalVectorSearch(dbKey, queryVector, entities, queryAnalysis, limit) {
+        const database = this.vectorDB[dbKey];
+        let scores = [];
+        
+        const searchLimit = Math.min(database.vectors.length, limit * 3);
+        
+        for (let i = 0; i < searchLimit; i++) {
+            const item = database.vectors[i];
+            let maxScore = 0;
+            let bestVectorType = '';
+            
+            for (const [vectorType, vector] of Object.entries(item.embeddings)) {
+                if (!vector || !Array.isArray(vector)) continue;
+                
+                const similarity = this.cosineSimilarity(queryVector, vector);
+                const weight = this.searchConfig.vectorWeights[vectorType] || 0.5;
+                const weightedScore = similarity * weight;
+                
+                if (weightedScore > maxScore) {
+                    maxScore = weightedScore;
+                    bestVectorType = vectorType;
+                }
+            }
+            
+            if (maxScore > 0) {
+                scores.push({
+                    id: item.id,
+                    score: maxScore,
+                    vectorType: bestVectorType,
+                    db: dbKey,
+                    metadata: database.metadata.find(m => m.id === item.id),
+                    searchMethod: 'vector_similarity'
+                });
+            }
+        }
+        
+        if (entities.length > 0) {
+            scores = this.boostWithEntities(scores, entities, dbKey);
+        }
+        
+        return scores.sort((a, b) => b.score - a.score).slice(0, limit);
+    }
+    
+    boostWithEntities(scores, entities, dbKey) {
+        return scores.map(result => {
+            let boost = 0;
+            
+            entities.forEach(entity => {
+                const text = result.metadata?.text_preview || '';
+                if (text.includes(entity.text)) {
+                    boost += entity.weight * 0.1;
+                }
+                
+                if (entity.type === 'activity' && dbKey === 'activities') {
+                    boost += 0.05;
+                }
+                
+                if (entity.type === 'industrial_area' && dbKey === 'industrial') {
+                    boost += 0.05;
+                }
+            });
+            
+            return {
+                ...result,
+                score: Math.min(1, result.score + boost),
+                entityBoost: boost
+            };
+        });
+    }
+    
+    async deepLevelSearch(results, queryAnalysis, intentAnalysis) {
+        for (const dbKey of ['activities', 'decision104', 'industrial']) {
+            if (results[dbKey].fast.length > 0) {
+                results[dbKey].deep = await this.performDeepAnalysis(
+                    results[dbKey].fast.slice(0, this.searchConfig.searchLevels.deep),
+                    queryAnalysis,
+                    intentAnalysis,
+                    dbKey
+                );
+            }
+        }
+    }
+    
+    async performDeepAnalysis(fastResults, queryAnalysis, intentAnalysis, dbKey) {
+        return fastResults.map(result => {
+            const contextScore = this.analyzeContextualRelevance(result, queryAnalysis, intentAnalysis);
+            const semanticScore = this.analyzeSemanticMatch(result, queryAnalysis);
+            const intentScore = this.analyzeIntentMatch(result, intentAnalysis);
+            
+            const finalScore = (
+                result.score * 0.5 +
+                contextScore * 0.3 +
+                semanticScore * 0.1 +
+                intentScore * 0.1
+            );
+            
+            return {
+                ...result,
+                finalScore: Math.min(1, finalScore),
+                deepAnalysis: {
+                    contextScore,
+                    semanticScore,
+                    intentScore,
+                    analysis: this.generateDeepAnalysisText(result, queryAnalysis, intentAnalysis)
+                }
+            };
+        }).sort((a, b) => b.finalScore - a.finalScore);
+    }
+    
+    analyzeContextualRelevance(result, queryAnalysis, intentAnalysis) {
+        let score = 0.5;
+        
+        const text = result.metadata?.text_preview || '';
+        const keywords = queryAnalysis.keywords || [];
+        
+        keywords.forEach(keyword => {
+            if (text.includes(keyword)) score += 0.1;
+        });
+        
+        if (intentAnalysis && this.matchesIntent(text, intentAnalysis)) {
+            score += 0.2;
+        }
+        
+        return Math.min(1, score);
+    }
+    
+    analyzeSemanticMatch(result, queryAnalysis) {
+        let score = 0.5;
+        
+        const text = result.metadata?.text_preview || '';
+        const queryText = queryAnalysis.text || '';
+        
+        const commonWords = this.findCommonWords(text, queryText);
+        if (commonWords.length > 0) {
+            score += commonWords.length * 0.05;
+        }
+        
+        return Math.min(1, score);
+    }
+    
+    analyzeIntentMatch(result, intentAnalysis) {
+        let score = 0.5;
+        
+        if (!intentAnalysis) return score;
+        
+        const text = result.metadata?.text_preview || '';
+        
+        switch (intentAnalysis.primary) {
+            case 'بحث_عن_تراخيص':
+                if (text.includes('ترخيص') || text.includes('رخصة')) score += 0.3;
+                break;
+            case 'بحث_عن_منطقة':
+                if (text.includes('منطقة') || text.includes('صناعية')) score += 0.3;
+                break;
+            case 'بحث_عن_حوافز':
+                if (text.includes('104') || text.includes('حافز')) score += 0.3;
+                break;
+        }
+        
+        return Math.min(1, score);
+    }
+    
+    generateDeepAnalysisText(result, queryAnalysis, intentAnalysis) {
+        const text = result.metadata?.text_preview || '';
+        const analysis = [];
+        
+        if (text.length > 0) {
+            analysis.push(`محتوى النص: ${text.substring(0, 50)}...`);
+        }
+        
+        if (result.deepAnalysis) {
+            analysis.push(`السياق: ${(result.deepAnalysis.contextScore * 100).toFixed(0)}%`);
+            analysis.push(`الدلالات: ${(result.deepAnalysis.semanticScore * 100).toFixed(0)}%`);
+            analysis.push(`النية: ${(result.deepAnalysis.intentScore * 100).toFixed(0)}%`);
+        }
+        
+        return analysis.join(' | ');
+    }
+    
+    matchesIntent(text, intentAnalysis) {
+        if (!intentAnalysis) return false;
+        
+        const intentText = intentAnalysis.primary;
+        const textLower = text.toLowerCase();
+        
+        switch (intentText) {
+            case 'بحث_عن_تراخيص':
+                return textLower.includes('ترخيص') || textLower.includes('رخصة');
+            case 'بحث_عن_منطقة':
+                return textLower.includes('منطقة') || textLower.includes('صناعية');
+            case 'بحث_عن_حوافز':
+                return textLower.includes('104') || textLower.includes('حافز');
+            default:
+                return false;
+        }
+    }
+    
+    findCommonWords(text1, text2) {
+        const words1 = text1.toLowerCase().split(/\s+/);
+        const words2 = text2.toLowerCase().split(/\s+/);
+        
+        return words1.filter(word => word.length > 2 && words2.includes(word));
+    }
+    
+    async smartReranking(results, queryAnalysis, intentAnalysis) {
+        for (const dbKey of ['activities', 'decision104', 'industrial']) {
+            if (results[dbKey].deep.length > 0) {
+                results[dbKey].final = this.intelligentRerank(
+                    results[dbKey].deep,
+                    queryAnalysis,
+                    intentAnalysis,
+                    dbKey
+                ).slice(0, this.searchConfig.searchLevels.final);
+            }
+        }
+    }
+    
+    intelligentRerank(results, queryAnalysis, intentAnalysis, dbKey) {
+        return results.map(result => {
+            let rerankScore = result.finalScore;
+            const boosts = [];
+            const penalties = [];
+            
+            if (result.metadata?.key_entities?.length > 0) {
+                const entityBoost = result.metadata.key_entities.length * 0.05;
+                rerankScore += entityBoost;
+                boosts.push(`كيانات: +${(entityBoost * 100).toFixed(0)}%`);
+            }
+            
+            if (result.metadata?.semantic_tags?.some(tag => 
+                queryAnalysis.keywords.some(kw => tag.includes(kw))
+            )) {
+                rerankScore += 0.1;
+                boosts.push('مطابقة دلالية: +10%');
+            }
+            
+            if (result.deepAnalysis?.intentScore > 0.7) {
+                rerankScore += 0.15;
+                boosts.push('مطابقة نية: +15%');
+            }
+            
+            if (this.searchConfig.enableSmartFeatures) {
+                const smartBoost = this.calculateSmartBoost(result, queryAnalysis);
+                rerankScore += smartBoost;
+                if (smartBoost > 0) {
+                    boosts.push(`ذكاء: +${(smartBoost * 100).toFixed(0)}%`);
+                }
+            }
+            
+            if (result.score < 0.3) {
+                rerankScore *= 0.8;
+                penalties.push('ثقة منخفضة: -20%');
+            }
+            
+            if (result.metadata?.confidence_score < 0.4) {
+                rerankScore *= 0.9;
+                penalties.push('جودة بيانات: -10%');
+            }
+            
+            return {
+                ...result,
+                rerankedScore: Math.min(1, rerankScore),
+                rerankingFactors: { boosts, penalties },
+                finalDisplayScore: this.formatScoreForDisplay(rerankScore)
+            };
+        }).sort((a, b) => b.rerankedScore - a.rerankedScore);
+    }
+    
+    calculateSmartBoost(result, queryAnalysis) {
+        let boost = 0;
+        
+        if (result.metadata?.qualityScore > 0.8) {
+            boost += 0.1;
+        }
+        
+        if (result.searchMethod === 'quick_index') {
+            boost += 0.05;
+        }
+        
+        if (result.metadata?.semantic_summary) {
+            const summary = result.metadata.semantic_summary;
+            const hasKeyTerms = queryAnalysis.keywords.some(kw => summary.includes(kw));
+            if (hasKeyTerms) boost += 0.05;
+        }
+        
+        return boost;
+    }
+    
+    formatScoreForDisplay(score) {
+        return `${(score * 100).toFixed(1)}%`;
     }
     
     // 🔥 الجديد: ربط ذكي عبر قواعد البيانات
@@ -1208,7 +1765,6 @@ class IntelligentVectorEngineV5 {
         
         const links = [];
         
-        // ربط الأنشطة مع القرار 104
         if (results.activities.length > 0 && results.decision104.length > 0) {
             const activityDecisionLinks = this.linkActivitiesToDecision104(
                 results.activities.slice(0, 5),
@@ -1217,7 +1773,6 @@ class IntelligentVectorEngineV5 {
             links.push(...activityDecisionLinks);
         }
         
-        // ربط الأنشطة مع المناطق
         if (results.activities.length > 0 && results.industrial.length > 0) {
             const activityAreaLinks = this.linkActivitiesToAreas(
                 results.activities.slice(0, 5),
@@ -1226,7 +1781,6 @@ class IntelligentVectorEngineV5 {
             links.push(...activityAreaLinks);
         }
         
-        // ربط المناطق مع القرار 104
         if (results.industrial.length > 0 && results.decision104.length > 0) {
             const areaDecisionLinks = this.linkAreasToDecision104(
                 results.industrial.slice(0, 5),
@@ -1258,6 +1812,52 @@ class IntelligentVectorEngineV5 {
                         similarity: similarity,
                         type: 'activity_decision',
                         note: 'النشاط قد يكون مشمولاً في القرار 104'
+                    });
+                }
+            });
+        });
+        
+        return links;
+    }
+    
+    linkActivitiesToAreas(activities, areas) {
+        const links = [];
+        
+        activities.forEach(activity => {
+            areas.forEach(area => {
+                const text1 = activity.metadata?.text_preview || '';
+                const text2 = area.metadata?.text_preview || '';
+                
+                if (text1.includes('فندق') && text2.includes('العاشر')) {
+                    links.push({
+                        from: { type: 'activity', id: activity.id, text: text1 },
+                        to: { type: 'area', id: area.id, text: text2 },
+                        similarity: 0.6,
+                        type: 'activity_area',
+                        note: 'الفنادق مناسبة للمناطق الصناعية'
+                    });
+                }
+            });
+        });
+        
+        return links;
+    }
+    
+    linkAreasToDecision104(areas, decisions) {
+        const links = [];
+        
+        areas.forEach(area => {
+            decisions.forEach(decision => {
+                const text1 = area.metadata?.text_preview || '';
+                const text2 = decision.metadata?.text_preview || '';
+                
+                if (text1.includes('صناعية') && text2.includes('104')) {
+                    links.push({
+                        from: { type: 'area', id: area.id, text: text1 },
+                        to: { type: 'decision104', id: decision.id, text: text2 },
+                        similarity: 0.7,
+                        type: 'area_decision',
+                        note: 'المناطق الصناعية مشمولة في القرار 104'
                     });
                 }
             });
@@ -1305,9 +1905,8 @@ class IntelligentVectorEngineV5 {
     
     // 🔥 الجديد: حساب عتبة ذكية
     calculateSmartThreshold(queryAnalysis, intentAnalysis, results) {
-        let baseThreshold = 0.3; // أساسي
+        let baseThreshold = 0.3;
         
-        // تعديل بناءً على التعقيد
         switch (queryAnalysis.complexity) {
             case 'very_simple': baseThreshold = 0.5; break;
             case 'simple': baseThreshold = 0.4; break;
@@ -1316,21 +1915,19 @@ class IntelligentVectorEngineV5 {
             case 'ambiguous': baseThreshold = 0.2; break;
         }
         
-        // تعديل بناءً على النية
         if (intentAnalysis) {
             switch (intentAnalysis.primary) {
                 case 'بحث_عن_تراخيص':
                 case 'بحث_عن_منطقة':
-                    baseThreshold *= 0.9; // تخفيض طفيف
+                    baseThreshold *= 0.9;
                     break;
                 case 'تعريف':
                 case 'سؤال_نعم_لا':
-                    baseThreshold *= 1.1; // زيادة طفيفة
+                    baseThreshold *= 1.1;
                     break;
             }
         }
         
-        // تعديل بناءً على جودة النتائج
         const allScores = [
             ...results.activities.map(r => r.score),
             ...results.decision104.map(r => r.score),
@@ -1343,7 +1940,6 @@ class IntelligentVectorEngineV5 {
             if (avgScore < 0.3) baseThreshold *= 1.15;
         }
         
-        // الحدود الدنيا والقصوى
         return Math.max(
             this.searchConfig.minConfidence,
             Math.min(0.7, baseThreshold)
@@ -1357,7 +1953,6 @@ class IntelligentVectorEngineV5 {
         for (const dbKey of ['activities', 'decision104', 'industrial']) {
             filtered[dbKey] = results[dbKey]
                 .filter(item => {
-                    // استخدام النتيجة المعاد ترتيبها إذا وجدت
                     const score = item.rerankedScore || item.score || item.finalScore || 0;
                     return score >= threshold;
                 })
@@ -1380,13 +1975,12 @@ class IntelligentVectorEngineV5 {
         for (const dbKey of ['activities', 'industrial']) {
             if (results[dbKey].length > 0) {
                 const enhancedItems = await this.enhanceItemsWithLinker(
-                    results[dbKey].slice(0, 3), // أول 3 نتائج فقط
+                    results[dbKey].slice(0, 3),
                     dbKey,
                     query,
                     queryAnalysis
                 );
                 
-                // استبدال النتائج المحسنة
                 results[dbKey] = results[dbKey].map(item => {
                     const enhanced = enhancedItems.find(e => e.id === item.id);
                     return enhanced ? { ...item, ...enhanced } : item;
@@ -1478,12 +2072,107 @@ class IntelligentVectorEngineV5 {
         return smartMeta;
     }
     
+    calculateRelevanceScore(item, queryAnalysis, intentAnalysis) {
+        let score = item.score || 0;
+        
+        if (intentAnalysis && this.matchesIntent(item.metadata?.text_preview || '', intentAnalysis)) {
+            score *= 1.2;
+        }
+        
+        const keywords = queryAnalysis.keywords || [];
+        const text = item.metadata?.text_preview || '';
+        
+        keywords.forEach(keyword => {
+            if (text.includes(keyword)) {
+                score += 0.1;
+            }
+        });
+        
+        return Math.min(1, score);
+    }
+    
+    determineConfidenceLevel(score) {
+        if (score >= 0.8) return 'عالية';
+        if (score >= 0.6) return 'متوسطة';
+        if (score >= 0.4) return 'منخفضة';
+        return 'ضعيفة';
+    }
+    
+    suggestActions(item, queryAnalysis) {
+        const actions = [];
+        const text = item.metadata?.text_preview || '';
+        
+        if (text.includes('فندق')) {
+            actions.push('اطلب تراخيص السياحة');
+            actions.push('تحقق من اشتراطات السلامة');
+        }
+        
+        if (text.includes('مصنع')) {
+            actions.push('راجع الهيئة العامة للاستثمار');
+            actions.push('تحقق من القرار 104 للحوافز');
+        }
+        
+        if (text.includes('منطقة صناعية')) {
+            actions.push('تواصل مع جهة الولاية');
+            actions.push('اطلب خريطة المنطقة');
+        }
+        
+        return actions.slice(0, 3);
+    }
+    
+    findRelatedItems(item, queryAnalysis) {
+        const related = [];
+        const dbKey = item.db || 'activities';
+        const text = item.metadata?.text_preview || '';
+        
+        if (dbKey === 'activities' && text.includes('فندق')) {
+            related.push({
+                type: 'related',
+                text: 'تراخيص الفنادق',
+                relevance: 0.8
+            });
+        }
+        
+        return related;
+    }
+    
+    extractQuickFacts(item) {
+        const facts = [];
+        const text = item.metadata?.text_preview || '';
+        
+        if (text.includes('104')) {
+            facts.push('مشمول في القرار 104 للحوافز');
+        }
+        
+        if (text.includes('فندق')) {
+            facts.push('يتطلب ترخيص من وزارة السياحة');
+        }
+        
+        if (text.includes('مصنع')) {
+            facts.push('يخضع لاشتراطات السلامة الصناعية');
+        }
+        
+        return facts.slice(0, 3);
+    }
+    
+    prepareForDisplay(item, queryAnalysis) {
+        const text = item.metadata?.text_preview || '';
+        const score = item.rerankedScore || item.score || 0;
+        
+        return {
+            title: text.substring(0, 60) + (text.length > 60 ? '...' : ''),
+            confidence: `${(score * 100).toFixed(1)}%`,
+            preview: text.substring(0, 120) + (text.length > 120 ? '...' : ''),
+            category: item.metadata?.category || 'عام',
+            hasDetails: !!item.metadata?.key_entities?.length
+        };
+    }
+    
     // 🔥 الجديد: التعلم من البحث الذكي
     learnFromIntelligentSearch(query, results, queryAnalysis, intentAnalysis) {
         const queryKey = query.toLowerCase().trim();
         const now = Date.now();
         
-        // تحديث تاريخ الاستعلامات
         const existingQuery = this.learning.queryHistory.get(queryKey);
         if (existingQuery) {
             existingQuery.count++;
@@ -1501,17 +2190,268 @@ class IntelligentVectorEngineV5 {
             });
         }
         
-        // تعلم الأنماط الناجحة
         this.learnSuccessfulPatterns(results, queryAnalysis, intentAnalysis);
         
-        // تحديث إحصائيات الثقة
         this.updateConfidenceStats(results, queryAnalysis);
         
-        // حفظ التعلم
         this.saveLearning();
     }
     
-    // ==================== دوال مساعدة محسنة ====================
+    learnSuccessfulPatterns(results, queryAnalysis, intentAnalysis) {
+        const successfulItems = [
+            ...results.activities.filter(r => r.score > 0.7),
+            ...results.decision104.filter(r => r.score > 0.7),
+            ...results.industrial.filter(r => r.score > 0.7)
+        ];
+        
+        successfulItems.forEach(item => {
+            const text = item.metadata?.text_preview || '';
+            if (text) {
+                const keywords = this.extractSmartKeywords(text);
+                keywords.forEach(keyword => {
+                    if (keyword.length > 3) {
+                        const existing = this.learning.entityPatterns.get(keyword);
+                        if (existing) {
+                            existing.count = (existing.count || 0) + 1;
+                        } else {
+                            this.learning.entityPatterns.set(keyword, {
+                                value: keyword,
+                                type: this.detectEntityTypeFromText(text),
+                                count: 1,
+                                firstSeen: Date.now(),
+                                lastSeen: Date.now()
+                            });
+                        }
+                    }
+                });
+            }
+        });
+    }
+    
+    detectEntityTypeFromText(text) {
+        if (text.includes('فندق') || text.includes('مطعم')) return 'activity';
+        if (text.includes('منطقة') || text.includes('صناعية')) return 'area';
+        if (text.includes('104') || text.includes('قرار')) return 'decision';
+        return 'general';
+    }
+    
+    updateConfidenceStats(results, queryAnalysis) {
+        const allScores = [
+            ...results.activities.map(r => r.score).filter(s => s > 0),
+            ...results.decision104.map(r => r.score).filter(s => s > 0),
+            ...results.industrial.map(r => r.score).filter(s => s > 0)
+        ];
+        
+        if (allScores.length > 0) {
+            const avgScore = allScores.reduce((a, b) => a + b, 0) / allScores.length;
+            this.learning.confidenceStats.push({
+                timestamp: Date.now(),
+                average: avgScore,
+                query: queryAnalysis.original
+            });
+            
+            if (this.learning.confidenceStats.length > 100) {
+                this.learning.confidenceStats.shift();
+            }
+        }
+    }
+    
+    async restoreLearning() {
+        try {
+            const saved = localStorage.getItem('vector_engine_learning_v5');
+            if (saved) {
+                const data = JSON.parse(saved);
+                
+                this.learning.queryHistory = new Map(data.queryHistory || []);
+                this.learning.entityPatterns = new Map(data.entityPatterns || []);
+                this.learning.successfulMatches = new Map(data.successfulMatches || []);
+                this.learning.confidenceStats = data.confidenceStats || [];
+                this.learning.ambiguousResolutions = new Map(data.ambiguousResolutions || []);
+                this.learning.crossLinks = new Map(data.crossLinks || []);
+                this.learning.intentPatterns = new Map(data.intentPatterns || []);
+                this.learning.semanticRelations = new Map(data.semanticRelations || []);
+                
+                console.log(`🎓 تم استعادة ${this.learning.queryHistory.size} استعلام متعلم`);
+            }
+        } catch (e) {
+            console.warn('⚠️ فشل استرجاع التعلم:', e);
+        }
+    }
+    
+    saveLearning() {
+        try {
+            const data = {
+                queryHistory: Array.from(this.learning.queryHistory.entries()),
+                entityPatterns: Array.from(this.learning.entityPatterns.entries()),
+                successfulMatches: Array.from(this.learning.successfulMatches.entries()),
+                confidenceStats: this.learning.confidenceStats,
+                ambiguousResolutions: Array.from(this.learning.ambiguousResolutions.entries()),
+                crossLinks: Array.from(this.learning.crossLinks.entries()),
+                intentPatterns: Array.from(this.learning.intentPatterns.entries()),
+                semanticRelations: Array.from(this.learning.semanticRelations.entries()),
+                timestamp: Date.now(),
+                version: 'v5'
+            };
+            
+            localStorage.setItem('vector_engine_learning_v5', JSON.stringify(data));
+        } catch (e) {
+            console.warn('⚠️ فشل حفظ التعلم:', e);
+        }
+    }
+    
+    updateSearchStats(searchDuration, enhancedResults, intentAnalysis) {
+        const hasResults = 
+            enhancedResults.activities.length > 0 || 
+            enhancedResults.decision104.length > 0 || 
+            enhancedResults.industrial.length > 0;
+        
+        if (hasResults) {
+            this.stats.successfulSearches++;
+        }
+        
+        this.stats.averageResponseTime = 
+            (this.stats.averageResponseTime * (this.stats.totalSearches - 1) + searchDuration) / 
+            this.stats.totalSearches;
+        
+        if (intentAnalysis && intentAnalysis.confidence > 0.7) {
+            this.stats.intentAccuracy = 
+                (this.stats.intentAccuracy * (this.stats.totalSearches - 1) + 1) / 
+                this.stats.totalSearches;
+        }
+        
+        const totalNotes = 
+            enhancedResults.activities.filter(r => r.hasNotes).length +
+            enhancedResults.decision104.filter(r => r.hasNotes).length +
+            enhancedResults.industrial.filter(r => r.hasNotes).length;
+        
+        this.stats.smartNoteCount += totalNotes;
+        
+        console.log(`📊 إحصائيات البحث: ${searchDuration}ms, ${hasResults ? 'نجح' : 'فشل'}, ${totalNotes} ملاحظة`);
+    }
+    
+    formatIntelligentResults(results, queryAnalysis, intentAnalysis, searchDuration) {
+        return {
+            activities: results.activities.map(r => ({
+                id: r.id,
+                score: r.rerankedScore || r.score,
+                metadata: r.metadata,
+                intelligentNotes: r.intelligentNotes || [],
+                displayInfo: r.displayInfo,
+                searchMethod: r.searchMethod,
+                timestamp: Date.now()
+            })),
+            decision104: results.decision104.map(r => ({
+                id: r.id,
+                score: r.rerankedScore || r.score,
+                metadata: r.metadata,
+                intelligentNotes: r.intelligentNotes || [],
+                displayInfo: r.displayInfo,
+                searchMethod: r.searchMethod,
+                timestamp: Date.now()
+            })),
+            industrial: results.industrial.map(r => ({
+                id: r.id,
+                score: r.rerankedScore || r.score,
+                metadata: r.metadata,
+                intelligentNotes: r.intelligentNotes || [],
+                displayInfo: r.displayInfo,
+                searchMethod: r.searchMethod,
+                timestamp: Date.now()
+            })),
+            analysis: {
+                query: queryAnalysis.original,
+                intent: intentAnalysis,
+                duration: searchDuration,
+                totalResults: 
+                    results.activities.length + 
+                    results.decision104.length + 
+                    results.industrial.length,
+                cacheUsed: false,
+                smartFeaturesUsed: this.searchConfig.enableSmartFeatures
+            },
+            timestamp: Date.now(),
+            engineVersion: 'V5'
+        };
+    }
+    
+    createEmptyResults() {
+        return {
+            activities: [],
+            decision104: [],
+            industrial: [],
+            analysis: {
+                query: '',
+                duration: 0,
+                totalResults: 0,
+                cacheUsed: false,
+                smartFeaturesUsed: false
+            },
+            timestamp: Date.now(),
+            engineVersion: 'V5'
+        };
+    }
+    
+    createFallbackResults(query, error) {
+        return {
+            activities: [],
+            decision104: [],
+            industrial: [],
+            analysis: {
+                query: query,
+                duration: 0,
+                totalResults: 0,
+                cacheUsed: false,
+                smartFeaturesUsed: false,
+                error: error.message || String(error)
+            },
+            timestamp: Date.now(),
+            engineVersion: 'V5',
+            isFallback: true
+        };
+    }
+    
+    initializeFallbackMode() {
+        console.warn("⚠️ تم تفعيل وضع الطوارئ (Fallback Mode)");
+        this.isReady = true;
+        
+        this.vectorDB = {
+            activities: { vectors: [], metadata: [] },
+            decision104: { vectors: [], metadata: [] },
+            industrial: { vectors: [], metadata: [] }
+        };
+        
+        this.searchConfig.minConfidence = 0.1;
+        this.searchConfig.enableSmartFeatures = false;
+        this.searchConfig.enableCrossLinking = false;
+        
+        console.log("✅ وضع الطوارئ جاهز للعمل");
+    }
+    
+    async loadFallbackData(dbKey) {
+        console.log(`📥 تحميل بيانات الطوارئ لـ ${dbKey}`);
+        
+        this.vectorDB[dbKey] = {
+            vectors: [],
+            metadata: []
+        };
+    }
+    
+    analyzeLoadedData() {
+        console.log("📈 تحليل البيانات المحملة...");
+        
+        let totalVectors = 0;
+        let totalMetadata = 0;
+        
+        for (const dbKey of ['activities', 'decision104', 'industrial']) {
+            const db = this.vectorDB[dbKey];
+            totalVectors += db.vectors.length;
+            totalMetadata += db.metadata.length;
+            
+            console.log(`   ${dbKey}: ${db.vectors.length} متجه، ${db.metadata.length} بيانات وصفية`);
+        }
+        
+        console.log(`📊 الإجمالي: ${totalVectors} متجه، ${totalMetadata} بيانات وصفية`);
+    }
     
     cosineSimilarity(vecA, vecB) {
         if (!vecA || !vecB || vecA.length !== vecB.length) return 0;
@@ -1531,439 +2471,75 @@ class IntelligentVectorEngineV5 {
         return denom === 0 ? 0 : dot / denom;
     }
     
-    // ==================== التوافق مع الأنظمة القديمة ====================
-    
     // للتوافق مع الكود القديم
     async search(query, limit = 10) {
         return this.intelligentSearch(query, { limit });
     }
     
-    // أضف هذا الكود في نهاية الملف (قبل السطر الأخير):
-// 🔥 الجديد: محلل النية الذكي
-class SmartIntentAnalyzer {
-    constructor() {
-        this.intentPatterns = new Map();
-        this.confidenceThreshold = 0.6;
-    }
-    
-    async initialize() {
-        // تحميل الأنماط المتعلمة
-        this.loadPatterns();
-    }
-    
-    deepAnalyze(query, queryAnalysis) {
-        const text = query.toLowerCase();
-        
-        // تحليل متعمق للنية
-        let primary = 'general';
-        let secondary = 'none';
-        let confidence = 0.5;
-        const matchedPatterns = [];
-        
-        // فحص الأنماط المعروفة
-        for (const [pattern, data] of this.intentPatterns.entries()) {
-            if (text.includes(pattern)) {
-                matchedPatterns.push({ pattern, data });
-                confidence = Math.max(confidence, data.confidence || 0.7);
-            }
-        }
-        
-        // تحليل بناءً على الكلمات المفتاحية
-        if (/ما هو|ما هي|تعريف/.test(text)) {
-            primary = 'تعريف';
-            confidence = 0.8;
-        } else if (/أين|مكان|موقع|عنوان/.test(text)) {
-            primary = 'موقع';
-            confidence = 0.85;
-        } else if (/كام|كم|عدد|رقم/.test(text)) {
-            primary = 'كمية';
-            confidence = 0.8;
-        } else if (/كيف|طريقة|خطوات|إجراءات/.test(text)) {
-            primary = 'طريقة';
-            confidence = 0.75;
-        } else if (/هل|؟|\?/.test(text)) {
-            primary = 'سؤال_نعم_لا';
-            confidence = 0.7;
-        } else if (/أريد|أبحث عن|عايز|عاوز/.test(text)) {
-            primary = 'بحث_عن_نشاط';
-            confidence = 0.75;
-        } else if (/ترخيص|رخصة|إجازة|تصريح/.test(text)) {
-            primary = 'بحث_عن_تراخيص';
-            confidence = 0.9;
-        } else if (/منطقة|صناعية|مدينة|حى/.test(text)) {
-            primary = 'بحث_عن_منطقة';
-            confidence = 0.85;
-        } else if (/104|قرار|حافز|حوافز|دعم/.test(text)) {
-            primary = 'بحث_عن_حوافز';
-            confidence = 0.9;
-        } else if (/سعر|تكلفة|بكام|ثمن/.test(text)) {
-            primary = 'تكلفة';
-            confidence = 0.8;
-        } else if (/مدة|زمن|وقت|فترة/.test(text)) {
-            primary = 'مدة';
-            confidence = 0.7;
-        }
-        
-        // تحليل النية الثانوية
-        if (/مساحة|حجم|كبير|صغير|متر/.test(text)) {
-            secondary = 'معرفة_المساحة';
-        } else if (/متطلبات|شروط|اشتراطات|مواصفات/.test(text)) {
-            secondary = 'معرفة_المتطلبات';
-        } else if (/جهة|جهات|مختص|مسئول/.test(text)) {
-            secondary = 'معرفة_الجهة';
-        }
+    getPerformanceReport() {
+        const monitorReport = this.monitor.getReport();
         
         return {
-            primary,
-            secondary,
-            confidence,
-            patterns: matchedPatterns,
-            keywords: this.extractIntentKeywords(text),
-            complexity: queryAnalysis.complexity,
-            timestamp: Date.now()
+            status: this.isReady ? 'نشط' : 'غير نشط',
+            uptime: monitorReport.uptime + ' مللي ثانية',
+            totalSearches: this.stats.totalSearches,
+            successfulSearches: this.stats.successfulSearches,
+            averageResponseTime: this.stats.averageResponseTime.toFixed(2) + 'ms',
+            cacheHitRate: (this.stats.cacheHitRate * 100).toFixed(1) + '%',
+            intentAccuracy: (this.stats.intentAccuracy * 100).toFixed(1) + '%',
+            smartNoteCount: this.stats.smartNoteCount,
+            crossLinkCount: this.stats.crossLinkCount,
+            databases: {
+                activities: this.vectorDB.activities.vectors.length,
+                decision104: this.vectorDB.decision104.vectors.length,
+                industrial: this.vectorDB.industrial.vectors.length
+            },
+            learning: {
+                queryHistory: this.learning.queryHistory.size,
+                entityPatterns: this.learning.entityPatterns.size,
+                confidenceStats: this.learning.confidenceStats.length
+            },
+            cache: {
+                shortTerm: this.smartCache.shortTerm.size,
+                longTerm: this.smartCache.longTerm.size,
+                total: this.smartCache.size()
+            }
         };
     }
     
-    extractIntentKeywords(text) {
-        const keywords = [];
-        const stopWords = ['من', 'في', 'على', 'إلى', 'أن', 'هو', 'هي'];
-        
-        text.split(/\s+/).forEach(word => {
-            if (word.length > 2 && !stopWords.includes(word)) {
-                keywords.push(word);
-            }
-        });
-        
-        return [...new Set(keywords)];
+    clearCache() {
+        this.smartCache.shortTerm.clear();
+        this.smartCache.longTerm.clear();
+        console.log('🗑️ تم مسح التخزين المؤقت');
     }
     
-    loadPatterns() {
-        // يمكن تحميل الأنماط من localStorage
-        try {
-            const saved = localStorage.getItem('intent_patterns_v5');
-            if (saved) {
-                const patterns = JSON.parse(saved);
-                this.intentPatterns = new Map(patterns);
-            }
-        } catch (e) {
-            console.warn('⚠️ فشل تحميل أنماط النية:', e);
-        }
-    }
-}
-
-// 🔥 الجديد: نظام الملاحظات الذكية
-class IntelligentNotesSystem {
-    constructor() {
-        this.noteTemplates = this.createNoteTemplates();
-        this.learningEnabled = true;
-    }
-    
-    async initialize() {
-        // يمكن تحميل قوالب مخصصة
-    }
-    
-    createNoteTemplates() {
-        return {
-            high_confidence: [
-                'نتيجة ممتازة - تطابق قوي',
-                'معلومات دقيقة وموثوقة',
-                'مصدر موثوق به'
-            ],
-            medium_confidence: [
-                'نتيجة جيدة - قد تحتاج للتأكيد',
-                'معلومات مفيدة للمراجعة',
-                'قيمة إضافية للبحث'
-            ],
-            low_confidence: [
-                'اقتراح أولي - يحتاج للتحقق',
-                'معلومات عامة للمراجعة',
-                'بداية جيدة للبحث'
-            ],
-            decision_link: [
-                'مرتبط بقرار 104 للحوافز',
-                'يمكن أن يستفيد من الحوافز الاستثمارية',
-                'مشمول في برامج الدعم الحكومي'
-            ],
-            area_link: [
-                'مناسب للمناطق الصناعية',
-                'يتوافق مع سياسات التنمية',
-                'مرتبط بخطط التنمية المحلية'
-            ],
-            licensing: [
-                'يتطلب تراخيص خاصة',
-                'يخضع لاشتراطات جهات متعددة',
-                'يحتاج موافقات رسمية'
-            ],
-            technical: [
-                'يحتاج متطلبات فنية',
-                'يخضع للمواصفات القياسية',
-                'يتطلب خبرة تقنية'
-            ]
-        };
-    }
-    
-    generateIntelligentNotes(result, queryAnalysis, intentAnalysis, dbKey) {
-        const notes = [];
+    resetLearning() {
+        this.learning.queryHistory.clear();
+        this.learning.entityPatterns.clear();
+        this.learning.successfulMatches.clear();
+        this.learning.confidenceStats = [];
+        this.learning.ambiguousResolutions.clear();
+        this.learning.crossLinks.clear();
+        this.learning.intentPatterns.clear();
+        this.learning.semanticRelations.clear();
         
-        // ملاحظات بناءً على الثقة
-        const score = result.score || result.finalScore || 0;
-        if (score >= 0.8) {
-            notes.push(this.getRandomNote('high_confidence'));
-        } else if (score >= 0.6) {
-            notes.push(this.getRandomNote('medium_confidence'));
-        } else if (score >= 0.4) {
-            notes.push(this.getRandomNote('low_confidence'));
-        }
-        
-        // ملاحظات بناءً على النية
-        if (intentAnalysis) {
-            if (intentAnalysis.primary === 'بحث_عن_حوافز' && dbKey === 'activities') {
-                notes.push(this.getRandomNote('decision_link'));
-            }
-            
-            if (intentAnalysis.primary === 'بحث_عن_تراخيص') {
-                notes.push(this.getRandomNote('licensing'));
-            }
-            
-            if (intentAnalysis.secondary === 'معرفة_المتطلبات') {
-                notes.push(this.getRandomNote('technical'));
-            }
-        }
-        
-        // ملاحظات بناءً على محتوى النتيجة
-        const text = result.metadata?.text_preview || '';
-        if (text.includes('منطقة') || text.includes('صناعية')) {
-            notes.push(this.getRandomNote('area_link'));
-        }
-        
-        // ملاحظات بناءً على الروابط الذكية
-        if (result.smartLinked) {
-            notes.push(`معلومات إضافية من الربط الذكي (ثقة: ${(result.linkingConfidence * 100).toFixed(0)}%)`);
-        }
-        
-        return notes.slice(0, 3); // أقصى 3 ملاحظات
-    }
-    
-    getRandomNote(category) {
-        const notes = this.noteTemplates[category];
-        if (!notes || notes.length === 0) return '';
-        return notes[Math.floor(Math.random() * notes.length)];
-    }
-}
-
-// 🔥 الجديد: التخزين المؤقت متعدد المستويات
-class MultiLevelCache {
-    constructor() {
-        this.shortTerm = new Map();    // ذاكرة الجلسة
-        this.longTerm = new Map();     // ذاكرة التخزين المحلي
-        this.patternCache = new Map(); // أنماط البحث
-        this.maxSize = 100;
-    }
-    
-    get(query, options) {
-        const cacheKey = this.createCacheKey(query, options);
-        
-        // التحقق من الذاكرة قصيرة المدى أولاً
-        const shortTermItem = this.shortTerm.get(cacheKey);
-        if (shortTermItem && Date.now() - shortTermItem.timestamp < 300000) {
-            return {
-                results: shortTermItem.results,
-                cacheTime: shortTermItem.cacheTime
-            };
-        }
-        
-        // التحقق من الذاكرة طويلة المدى
-        const longTermItem = this.longTerm.get(cacheKey);
-        if (longTermItem && Date.now() - longTermItem.timestamp < 86400000) {
-            this.shortTerm.set(cacheKey, longTermItem);
-            return {
-                results: longTermItem.results,
-                cacheTime: longTermItem.cacheTime
-            };
-        }
-        
-        return null;
-    }
-    
-    set(query, results, cacheTime, options) {
-        const cacheKey = this.createCacheKey(query, options);
-        const cacheItem = {
-            results: results,
-            cacheTime: cacheTime,
-            timestamp: Date.now(),
-            query: query,
-            options: options
-        };
-        
-        this.shortTerm.set(cacheKey, cacheItem);
-        
-        if (this.isWorthyOfLongTerm(results)) {
-            this.longTerm.set(cacheKey, cacheItem);
-            
-            if (this.longTerm.size > this.maxSize) {
-                this.cleanupLongTermCache();
-            }
-        }
-        
-        if (this.shortTerm.size % 10 === 0) {
-            this.saveToStorage();
-        }
-    }
-    
-    createCacheKey(query, options) {
-        const optionsStr = JSON.stringify(options || {});
-        return `${query}_${this.hashString(optionsStr)}`;
-    }
-    
-    hashString(str) {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            hash = ((hash << 5) - hash) + str.charCodeAt(i);
-            hash |= 0;
-        }
-        return hash.toString(16);
-    }
-    
-    isWorthyOfLongTerm(results) {
-        const hasGoodResults = 
-            results.activities.length > 0 || 
-            results.decision104.length > 0 || 
-            results.industrial.length > 0;
-        
-        const hasHighConfidence = 
-            results.activities.some(r => r.score > 0.7) ||
-            results.decision104.some(r => r.score > 0.7) ||
-            results.industrial.some(r => r.score > 0.7);
-        
-        return hasGoodResults && hasHighConfidence;
-    }
-    
-    cleanupLongTermCache() {
-        const entries = Array.from(this.longTerm.entries());
-        entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-        
-        const toRemove = entries.slice(0, Math.floor(this.maxSize * 0.1));
-        toRemove.forEach(([key]) => this.longTerm.delete(key));
-    }
-    
-    async load() {
-        try {
-            const saved = localStorage.getItem('vector_engine_cache_v5');
-            if (saved) {
-                const data = JSON.parse(saved);
-                this.longTerm = new Map(data.longTerm || []);
-                console.log(`📦 تم تحميل ${this.longTerm.size} عنصر من التخزين المؤقت`);
-            }
-        } catch (e) {
-            console.warn('⚠️ فشل تحميل التخزين المؤقت:', e);
-        }
-    }
-    
-    saveToStorage() {
-        try {
-            const data = {
-                longTerm: Array.from(this.longTerm.entries()),
-                timestamp: Date.now(),
-                version: 'v5'
-            };
-            localStorage.setItem('vector_engine_cache_v5', JSON.stringify(data));
-        } catch (e) {
-            console.warn('⚠️ فشل حفظ التخزين المؤقت:', e);
-        }
-    }
-    
-    size() {
-        return this.longTerm.size + this.shortTerm.size;
-    }
-}
-
-// 🔥 الجديد: معالج النصوص العربي المحسن
-class EnhancedArabicTextProcessor {
-    constructor() {
-        this.EGYPTIAN_GOVERNORATES = [
-            'القاهرة', 'الإسكندرية', 'الجيزة', 'القليوبية', 'الشرقية',
-            'الدقهلية', 'البحيرة', 'المنوفية', 'الغربية', 'كفر الشيخ',
-            'دمياط', 'بورسعيد', 'الإسماعيلية', 'السويس', 'شمال سيناء',
-            'جنوب سيناء', 'الفيوم', 'بني سويف', 'المنيا', 'أسيوط',
-            'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'البحر الأحمر', 'الوادي الجديد', 'مطروح'
-        ];
-        
-        this.INDUSTRIAL_AREA_PATTERNS = [
-            { name: 'العاشر من رمضان', aliases: ['العاشر', '10 رمضان'], egyptianNames: ['عاشر رمضان'] },
-            { name: 'السادات', aliases: ['مدينة السادات'], egyptianNames: ['السادات'] },
-            { name: 'برج العرب', aliases: ['برج'], egyptianNames: ['برج العرب'] },
-            { name: 'زهراء المعادي', aliases: ['زهراء', 'الزهراء'], egyptianNames: ['الزهراء'] },
-            { name: '6 أكتوبر', aliases: ['أكتوبر', 'ستة أكتوبر'], egyptianNames: ['ستة اكتوبر'] },
-            { name: 'بدر', aliases: ['مدينة بدر'], egyptianNames: ['بدر'] },
-            { name: 'العبور', aliases: ['مدينة العبور'], egyptianNames: ['العبور'] }
-        ];
-        
-        this.ACTIVITY_PATTERNS = [
-            { formal: 'فندق', egyptian: ['أوتيل', 'فندق سياحي'], category: 'سياحة', weight: 1.5 },
-            { formal: 'مصنع', egyptian: ['معمل', 'مصنع'], category: 'صناعي', weight: 1.4 },
-            { formal: 'مخبز', egyptian: ['فرن', 'مخبز'], category: 'غذائي', weight: 1.3 },
-            { formal: 'ورشة', egyptian: ['ورشة', 'وراشة'], category: 'صناعي', weight: 1.2 },
-            { formal: 'مطعم', egyptian: ['مطعم', 'اكل'], category: 'غذائي', weight: 1.3 },
-            { formal: 'صيدلية', egyptian: ['صيدلية', 'دوا'], category: 'صحي', weight: 1.4 }
-        ];
-        
-        this.EGYPTIAN_STOP_WORDS = [
-            'يعني', 'خلاص', 'طب', 'تمام', 'يا', 'يا ريت',
-            'مش', 'ممكن', 'بس', 'على فكرة', 'أصل', 'بالظبط',
-            'بصراحة', 'طيب', 'أها', 'ايوة', 'اه', 'لا'
-        ];
-    }
-    
-    normalizeEgyptianText(text) {
-        if (!text || !text.trim()) return '';
-        
-        let normalized = text.toLowerCase();
-        
-        const dialectMap = {
-            'كام': 'كم',
-            'عايز': 'أريد',
-            'عاوز': 'أريد',
-            'عيز': 'أريد',
-            'قول': 'قل',
-            'قولي': 'قل لي',
-            'ايوه': 'نعم',
-            'لأ': 'لا',
-            'مش': 'ليس',
-            'يعني ايه': 'ما معنى',
-            'ايه هو': 'ما هو',
-            'بكام': 'بكم',
-            'فين': 'أين',
-            'عامل': 'يعمل',
-            'هيعمل': 'سيعمل'
-        };
-        
-        Object.entries(dialectMap).forEach(([dialect, formal]) => {
-            normalized = normalized.replace(new RegExp(dialect, 'g'), formal);
-        });
-        
-        this.EGYPTIAN_STOP_WORDS.forEach(word => {
-            const regex = new RegExp(`\\b${word}\\b`, 'g');
-            normalized = normalized.replace(regex, '');
-        });
-        
-        normalized = normalized.replace(/\s+/g, ' ').trim();
-        
-        return normalized;
+        localStorage.removeItem('vector_engine_learning_v5');
+        console.log('🔄 تم إعادة تعيين نظام التعلم');
     }
 }
 
 // ==================== التصدير والتهيئة ====================
 
 window.vEngineV5 = new IntelligentVectorEngineV5();
-window.vEngine = window.vEngineV5; // للتوافق مع الكود القديم
+window.vEngine = window.vEngineV5;
 
-// التوافق مع Smart Assistant V14
 window.vectorEngine = {
     search: (query, options) => window.vEngineV5.intelligentSearch(query, options),
     getStats: () => window.vEngineV5.stats,
-    clearCache: () => window.vEngineV5.smartCache.clear()
+    clearCache: () => window.vEngineV5.clearCache(),
+    getPerformanceReport: () => window.vEngineV5.getPerformanceReport(),
+    resetLearning: () => window.vEngineV5.resetLearning()
 };
 
 console.log('✅ Vector Engine V5 - المحرك الدلالي الذكي المتطور جاهز!');
-
 console.log('🚀 ميزات V5: بحث متعدد المستويات + ذكاء اصطناعي + ربط ذكي + أداء فائق');
