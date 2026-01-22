@@ -30,7 +30,8 @@ class DataLinkingEngine {
             linkingAttempts: 0,
             cacheHits: 0,
             averageConfidence: 0,
-            successRate: 0
+            successRate: 0,
+            responseTimes: []
         };
         
         // --- نظام التوسيع (Plugins) ---
@@ -756,5 +757,6 @@ class DataLinkingEngine {
 
 // ==================== التصدير ====================
 window.DataLinkingEngine = DataLinkingEngine;
+
 
 console.log('✅ DataLinkingEngine V1.0 جاهز للتوسيع');
