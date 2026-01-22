@@ -1000,7 +1000,14 @@ class AssistantUIV2 {
         this.isMinimized = false;
         setTimeout(() => this.elements.textInput.focus(), 300);
     }
-    
+    // إضافة هذه الدالة المفقودة
+     toggleWindow() {
+        if (this.isOpen && !this.isMinimized) {
+        this.closeWindow();
+       } else {
+        this.openWindow();
+          }
+        }
     closeWindow() {
         this.elements.window.classList.remove('open');
         this.elements.fab.classList.remove('hidden');
@@ -1381,3 +1388,4 @@ document.addEventListener('DOMContentLoaded', () => {
     window.smartAssistantUI = new AssistantUIV2();
     window.assistantUI = window.smartAssistantUI; // للتوافق
 });
+
