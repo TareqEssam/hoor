@@ -114,6 +114,8 @@ class AssistantUIV2 {
         chatWindow.innerHTML = this.createEnhancedWindowHTML();
         document.body.appendChild(chatWindow);
         this.elements.window = chatWindow;
+        this.elements.window.style.display = 'none';
+
         
         // تخزين المراجع
         this.cacheDOMReferences();
@@ -1381,3 +1383,4 @@ document.addEventListener('DOMContentLoaded', () => {
     window.smartAssistantUI = new AssistantUIV2();
     window.assistantUI = window.smartAssistantUI; // للتوافق
 });
+
