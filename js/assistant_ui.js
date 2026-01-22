@@ -408,6 +408,123 @@ class AssistantUIV2 {
         // تحديث الحالة
         this.updateStatusDisplay();
     }
+     // ==================== دوال مساعدة للإعدادات ====================
+restoreSettings() {
+    try {
+        const saved = localStorage.getItem('assistant_ui_settings_v2');
+        if (saved) {
+            this.settings = JSON.parse(saved);
+            console.log('✅ تم استعادة الإعدادات');
+        }
+    } catch (e) {
+        console.warn('⚠️ فشل استعادة الإعدادات:', e);
+    }
+}
+
+saveSettings() {
+    try {
+        localStorage.setItem('assistant_ui_settings_v2', JSON.stringify(this.settings));
+    } catch (e) {
+        console.warn('⚠️ فشل حفظ الإعدادات:', e);
+    }
+}
+
+createFallbackUI() {
+    console.log('🔄 إنشاء واجهة الطوارئ البسيطة...');
+    
+    const fallbackDiv = document.createElement('div');
+    fallbackDiv.id = 'assistant-fallback';
+    fallbackDiv.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 300px;
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        padding: 15px;
+        z-index: 10000;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        font-family: 'Segoe UI', Arial, sans-serif;
+    `;
+    
+    fallbackDiv.innerHTML = `
+        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+            <div style="background: #4caf50; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div>
+                <h3 style="margin: 0; font-size: 16px;">المساعد الذكي (وضع الطوارئ)</h3>
+                <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">الواجهة المتقدمة غير متوفرة</p>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+            <textarea id="fallback-input" 
+                placeholder="اكتب سؤالك هنا..." 
+                style="width: 100%; height: 60px; padding: 8px; border: 1px solid #ddd; border-radius: 5px; resize: none; font-family: inherit;"></textarea>
+        </div>
+        
+        <button id="fallback-send" 
+                style="width: 100%; padding: 10px; background: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+            <i class="fas fa-paper-plane"></i> إرسال
+        </button>
+        
+        <div id="fallback-response" 
+             style="margin-top: 15px; padding: 10px; background: #f5f5f5; border-radius: 5px; max-height: 200px; overflow-y: auto; font-size: 14px; display: none;">
+        </div>
+    `;
+    
+    document.body.appendChild(fallbackDiv);
+    
+    // ربط الأحداث
+    const sendBtn = document.getElementById('fallback-send');
+    const inputField = document.getElementById('fallback-input');
+    const responseDiv = document.getElementById('fallback-response');
+    
+    sendBtn.addEventListener('click', () => {
+        const query = inputField.value.trim();
+        if (!query) return;
+        
+        responseDiv.style.display = 'block';
+        responseDiv.innerHTML = '<div style="color: #666; text-align: center;"><i class="fas fa-spinner fa-spin"></i> جاري المعالجة...</div>';
+        
+        if (this.currentAssistant) {
+            this.currentAssistant.query(query)
+                .then(response => {
+                    responseDiv.innerHTML = `
+                        <div style="color: #333; margin-bottom: 10px;"><strong>السؤال:</strong> ${query}</div>
+                        <div style="color: #4caf50; margin-bottom: 10px;"><strong>الإجابة:</strong></div>
+                        <div style="background: white; padding: 10px; border-radius: 5px; border-left: 3px solid #4caf50;">
+                            ${response.text.replace(/\n/g, '<br>')}
+                        </div>
+                    `;
+                    inputField.value = '';
+                })
+                .catch(error => {
+                    responseDiv.innerHTML = `
+                        <div style="color: #f44336;">
+                            <strong>خطأ:</strong> ${error.message || 'حدث خطأ غير متوقع'}
+                        </div>
+                    `;
+                });
+        } else {
+            responseDiv.innerHTML = `
+                <div style="color: #f44336;">
+                    <strong>تحذير:</strong> المساعد الذكي غير متوفر حالياً
+                </div>
+            `;
+        }
+    });
+    
+    // السماح بالإرسال بالزر Enter
+    inputField.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendBtn.click();
+        }
+    });
+}
     
     // ==================== ربط الأحداث المحسنة ====================
     bindEnhancedEvents() {
@@ -863,4 +980,5 @@ class AssistantUIV2 {
 document.addEventListener('DOMContentLoaded', () => {
     window.smartAssistantUI = new AssistantUIV2();
     window.assistantUI = window.smartAssistantUI; // للتوافق
+
 });
