@@ -366,7 +366,7 @@ class AssistantUIV2 {
         this.elements.linkingStatus = this.elements.window.querySelector('#linking-status');
         this.elements.memoryStatus = this.elements.window.querySelector('#memory-status');
         this.elements.confidenceDisplay = this.elements.window.querySelector('#confidence-display');
-        this.elements.thinkingIndicator = this.elements.window.querySelector('#smart-thinking-indicator');
+        this.elements.thinkingIndicator = this.elements.window.querySelector('#thinking-indicator');
         this.elements.thinkingSubtitle = this.elements.window.querySelector('#thinking-subtitle');
         this.elements.thinkingProgress = this.elements.window.querySelector('#thinking-progress');
         this.elements.assistantStatus = this.elements.window.querySelector('#assistant-status');
@@ -908,18 +908,24 @@ class AssistantUIV2 {
     }
     
     showThinking(show) {
-        if (show) {
-            this.elements.thinkingIndicator.style.display = 'block';
-            this.startThinkingAnimation();
-        } else {
-            this.elements.thinkingIndicator.style.display = 'none';
-            this.stopThinkingAnimation();
-        }
-        
-        if (show && this.settings.autoScroll) {
-            setTimeout(() => this.scrollToBottom(), 100);
-        }
+    // التحقق من وجود العنصر قبل استخدامه
+    if (!this.elements.thinkingIndicator) {
+        console.error('❌ thinkingIndicator not found');
+        return;
     }
+    
+    if (show) {
+        this.elements.thinkingIndicator.style.display = 'block';
+        this.startThinkingAnimation();
+    } else {
+        this.elements.thinkingIndicator.style.display = 'none';
+        this.stopThinkingAnimation();
+    }
+    
+    if (show && this.settings.autoScroll) {
+        setTimeout(() => this.scrollToBottom(), 100);
+    }
+}
     
     startThinkingAnimation() {
         let progress = 0;
@@ -1388,4 +1394,5 @@ document.addEventListener('DOMContentLoaded', () => {
     window.smartAssistantUI = new AssistantUIV2();
     window.assistantUI = window.smartAssistantUI; // للتوافق
 });
+
 
