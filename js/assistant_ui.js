@@ -406,13 +406,7 @@ class AssistantUIV2 {
         } else {
             this.elements.voiceTabBtn.style.display = 'none';
         }
-        // دالة التحكم في فتح وإغلاق النافذة
-    toggleWindow() {
-        if (this.isOpen) {
-            this.closeWindow();
-        } else {
-            this.openWindow();
-        }
+        
    
         // استعادة الإعدادات
         this.restoreSettings();
@@ -1446,6 +1440,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.smartAssistantUI = new AssistantUIV2();
     window.assistantUI = window.smartAssistantUI; // للتوافق
 });
+
 
 
 
