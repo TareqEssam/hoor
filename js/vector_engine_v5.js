@@ -1538,429 +1538,417 @@ class IntelligentVectorEngineV5 {
         return this.intelligentSearch(query, { limit });
     }
     
-    // ==================== الأنظمة الذكية المساعدة ====================
+    // أضف هذا الكود في نهاية الملف (قبل السطر الأخير):
+// 🔥 الجديد: محلل النية الذكي
+class SmartIntentAnalyzer {
+    constructor() {
+        this.intentPatterns = new Map();
+        this.confidenceThreshold = 0.6;
+    }
     
-    // 🔥 الجديد: محلل النية الذكي
-    class SmartIntentAnalyzer {
-        constructor() {
-            this.intentPatterns = new Map();
-            this.confidenceThreshold = 0.6;
+    async initialize() {
+        // تحميل الأنماط المتعلمة
+        this.loadPatterns();
+    }
+    
+    deepAnalyze(query, queryAnalysis) {
+        const text = query.toLowerCase();
+        
+        // تحليل متعمق للنية
+        let primary = 'general';
+        let secondary = 'none';
+        let confidence = 0.5;
+        const matchedPatterns = [];
+        
+        // فحص الأنماط المعروفة
+        for (const [pattern, data] of this.intentPatterns.entries()) {
+            if (text.includes(pattern)) {
+                matchedPatterns.push({ pattern, data });
+                confidence = Math.max(confidence, data.confidence || 0.7);
+            }
         }
         
-        async initialize() {
-            // تحميل الأنماط المتعلمة
-            this.loadPatterns();
+        // تحليل بناءً على الكلمات المفتاحية
+        if (/ما هو|ما هي|تعريف/.test(text)) {
+            primary = 'تعريف';
+            confidence = 0.8;
+        } else if (/أين|مكان|موقع|عنوان/.test(text)) {
+            primary = 'موقع';
+            confidence = 0.85;
+        } else if (/كام|كم|عدد|رقم/.test(text)) {
+            primary = 'كمية';
+            confidence = 0.8;
+        } else if (/كيف|طريقة|خطوات|إجراءات/.test(text)) {
+            primary = 'طريقة';
+            confidence = 0.75;
+        } else if (/هل|؟|\?/.test(text)) {
+            primary = 'سؤال_نعم_لا';
+            confidence = 0.7;
+        } else if (/أريد|أبحث عن|عايز|عاوز/.test(text)) {
+            primary = 'بحث_عن_نشاط';
+            confidence = 0.75;
+        } else if (/ترخيص|رخصة|إجازة|تصريح/.test(text)) {
+            primary = 'بحث_عن_تراخيص';
+            confidence = 0.9;
+        } else if (/منطقة|صناعية|مدينة|حى/.test(text)) {
+            primary = 'بحث_عن_منطقة';
+            confidence = 0.85;
+        } else if (/104|قرار|حافز|حوافز|دعم/.test(text)) {
+            primary = 'بحث_عن_حوافز';
+            confidence = 0.9;
+        } else if (/سعر|تكلفة|بكام|ثمن/.test(text)) {
+            primary = 'تكلفة';
+            confidence = 0.8;
+        } else if (/مدة|زمن|وقت|فترة/.test(text)) {
+            primary = 'مدة';
+            confidence = 0.7;
         }
         
-        deepAnalyze(query, queryAnalysis) {
-            const text = query.toLowerCase();
-            
-            // تحليل متعمق للنية
-            let primary = 'general';
-            let secondary = 'none';
-            let confidence = 0.5;
-            const matchedPatterns = [];
-            
-            // فحص الأنماط المعروفة
-            for (const [pattern, data] of this.intentPatterns.entries()) {
-                if (text.includes(pattern)) {
-                    matchedPatterns.push({ pattern, data });
-                    confidence = Math.max(confidence, data.confidence || 0.7);
-                }
+        // تحليل النية الثانوية
+        if (/مساحة|حجم|كبير|صغير|متر/.test(text)) {
+            secondary = 'معرفة_المساحة';
+        } else if (/متطلبات|شروط|اشتراطات|مواصفات/.test(text)) {
+            secondary = 'معرفة_المتطلبات';
+        } else if (/جهة|جهات|مختص|مسئول/.test(text)) {
+            secondary = 'معرفة_الجهة';
+        }
+        
+        return {
+            primary,
+            secondary,
+            confidence,
+            patterns: matchedPatterns,
+            keywords: this.extractIntentKeywords(text),
+            complexity: queryAnalysis.complexity,
+            timestamp: Date.now()
+        };
+    }
+    
+    extractIntentKeywords(text) {
+        const keywords = [];
+        const stopWords = ['من', 'في', 'على', 'إلى', 'أن', 'هو', 'هي'];
+        
+        text.split(/\s+/).forEach(word => {
+            if (word.length > 2 && !stopWords.includes(word)) {
+                keywords.push(word);
+            }
+        });
+        
+        return [...new Set(keywords)];
+    }
+    
+    loadPatterns() {
+        // يمكن تحميل الأنماط من localStorage
+        try {
+            const saved = localStorage.getItem('intent_patterns_v5');
+            if (saved) {
+                const patterns = JSON.parse(saved);
+                this.intentPatterns = new Map(patterns);
+            }
+        } catch (e) {
+            console.warn('⚠️ فشل تحميل أنماط النية:', e);
+        }
+    }
+}
+
+// 🔥 الجديد: نظام الملاحظات الذكية
+class IntelligentNotesSystem {
+    constructor() {
+        this.noteTemplates = this.createNoteTemplates();
+        this.learningEnabled = true;
+    }
+    
+    async initialize() {
+        // يمكن تحميل قوالب مخصصة
+    }
+    
+    createNoteTemplates() {
+        return {
+            high_confidence: [
+                'نتيجة ممتازة - تطابق قوي',
+                'معلومات دقيقة وموثوقة',
+                'مصدر موثوق به'
+            ],
+            medium_confidence: [
+                'نتيجة جيدة - قد تحتاج للتأكيد',
+                'معلومات مفيدة للمراجعة',
+                'قيمة إضافية للبحث'
+            ],
+            low_confidence: [
+                'اقتراح أولي - يحتاج للتحقق',
+                'معلومات عامة للمراجعة',
+                'بداية جيدة للبحث'
+            ],
+            decision_link: [
+                'مرتبط بقرار 104 للحوافز',
+                'يمكن أن يستفيد من الحوافز الاستثمارية',
+                'مشمول في برامج الدعم الحكومي'
+            ],
+            area_link: [
+                'مناسب للمناطق الصناعية',
+                'يتوافق مع سياسات التنمية',
+                'مرتبط بخطط التنمية المحلية'
+            ],
+            licensing: [
+                'يتطلب تراخيص خاصة',
+                'يخضع لاشتراطات جهات متعددة',
+                'يحتاج موافقات رسمية'
+            ],
+            technical: [
+                'يحتاج متطلبات فنية',
+                'يخضع للمواصفات القياسية',
+                'يتطلب خبرة تقنية'
+            ]
+        };
+    }
+    
+    generateIntelligentNotes(result, queryAnalysis, intentAnalysis, dbKey) {
+        const notes = [];
+        
+        // ملاحظات بناءً على الثقة
+        const score = result.score || result.finalScore || 0;
+        if (score >= 0.8) {
+            notes.push(this.getRandomNote('high_confidence'));
+        } else if (score >= 0.6) {
+            notes.push(this.getRandomNote('medium_confidence'));
+        } else if (score >= 0.4) {
+            notes.push(this.getRandomNote('low_confidence'));
+        }
+        
+        // ملاحظات بناءً على النية
+        if (intentAnalysis) {
+            if (intentAnalysis.primary === 'بحث_عن_حوافز' && dbKey === 'activities') {
+                notes.push(this.getRandomNote('decision_link'));
             }
             
-            // تحليل بناءً على الكلمات المفتاحية
-            if (/ما هو|ما هي|تعريف/.test(text)) {
-                primary = 'تعريف';
-                confidence = 0.8;
-            } else if (/أين|مكان|موقع|عنوان/.test(text)) {
-                primary = 'موقع';
-                confidence = 0.85;
-            } else if (/كام|كم|عدد|رقم/.test(text)) {
-                primary = 'كمية';
-                confidence = 0.8;
-            } else if (/كيف|طريقة|خطوات|إجراءات/.test(text)) {
-                primary = 'طريقة';
-                confidence = 0.75;
-            } else if (/هل|؟|\?/.test(text)) {
-                primary = 'سؤال_نعم_لا';
-                confidence = 0.7;
-            } else if (/أريد|أبحث عن|عايز|عاوز/.test(text)) {
-                primary = 'بحث_عن_نشاط';
-                confidence = 0.75;
-            } else if (/ترخيص|رخصة|إجازة|تصريح/.test(text)) {
-                primary = 'بحث_عن_تراخيص';
-                confidence = 0.9;
-            } else if (/منطقة|صناعية|مدينة|حى/.test(text)) {
-                primary = 'بحث_عن_منطقة';
-                confidence = 0.85;
-            } else if (/104|قرار|حافز|حوافز|دعم/.test(text)) {
-                primary = 'بحث_عن_حوافز';
-                confidence = 0.9;
-            } else if (/سعر|تكلفة|بكام|ثمن/.test(text)) {
-                primary = 'تكلفة';
-                confidence = 0.8;
-            } else if (/مدة|زمن|وقت|فترة/.test(text)) {
-                primary = 'مدة';
-                confidence = 0.7;
+            if (intentAnalysis.primary === 'بحث_عن_تراخيص') {
+                notes.push(this.getRandomNote('licensing'));
             }
             
-            // تحليل النية الثانوية
-            if (/مساحة|حجم|كبير|صغير|متر/.test(text)) {
-                secondary = 'معرفة_المساحة';
-            } else if (/متطلبات|شروط|اشتراطات|مواصفات/.test(text)) {
-                secondary = 'معرفة_المتطلبات';
-            } else if (/جهة|جهات|مختص|مسئول/.test(text)) {
-                secondary = 'معرفة_الجهة';
+            if (intentAnalysis.secondary === 'معرفة_المتطلبات') {
+                notes.push(this.getRandomNote('technical'));
             }
-            
+        }
+        
+        // ملاحظات بناءً على محتوى النتيجة
+        const text = result.metadata?.text_preview || '';
+        if (text.includes('منطقة') || text.includes('صناعية')) {
+            notes.push(this.getRandomNote('area_link'));
+        }
+        
+        // ملاحظات بناءً على الروابط الذكية
+        if (result.smartLinked) {
+            notes.push(`معلومات إضافية من الربط الذكي (ثقة: ${(result.linkingConfidence * 100).toFixed(0)}%)`);
+        }
+        
+        return notes.slice(0, 3); // أقصى 3 ملاحظات
+    }
+    
+    getRandomNote(category) {
+        const notes = this.noteTemplates[category];
+        if (!notes || notes.length === 0) return '';
+        return notes[Math.floor(Math.random() * notes.length)];
+    }
+}
+
+// 🔥 الجديد: التخزين المؤقت متعدد المستويات
+class MultiLevelCache {
+    constructor() {
+        this.shortTerm = new Map();    // ذاكرة الجلسة
+        this.longTerm = new Map();     // ذاكرة التخزين المحلي
+        this.patternCache = new Map(); // أنماط البحث
+        this.maxSize = 100;
+    }
+    
+    get(query, options) {
+        const cacheKey = this.createCacheKey(query, options);
+        
+        // التحقق من الذاكرة قصيرة المدى أولاً
+        const shortTermItem = this.shortTerm.get(cacheKey);
+        if (shortTermItem && Date.now() - shortTermItem.timestamp < 300000) {
             return {
-                primary,
-                secondary,
-                confidence,
-                patterns: matchedPatterns,
-                keywords: this.extractIntentKeywords(text),
-                complexity: queryAnalysis.complexity,
-                timestamp: Date.now()
+                results: shortTermItem.results,
+                cacheTime: shortTermItem.cacheTime
             };
         }
         
-        extractIntentKeywords(text) {
-            const keywords = [];
-            const stopWords = ['من', 'في', 'على', 'إلى', 'أن', 'هو', 'هي'];
-            
-            text.split(/\s+/).forEach(word => {
-                if (word.length > 2 && !stopWords.includes(word)) {
-                    keywords.push(word);
-                }
-            });
-            
-            return [...new Set(keywords)];
-        }
-        
-        loadPatterns() {
-            // يمكن تحميل الأنماط من localStorage
-            try {
-                const saved = localStorage.getItem('intent_patterns_v5');
-                if (saved) {
-                    const patterns = JSON.parse(saved);
-                    this.intentPatterns = new Map(patterns);
-                }
-            } catch (e) {
-                console.warn('⚠️ فشل تحميل أنماط النية:', e);
-            }
-        }
-    }
-    
-    // 🔥 الجديد: نظام الملاحظات الذكية
-    class IntelligentNotesSystem {
-        constructor() {
-            this.noteTemplates = this.createNoteTemplates();
-            this.learningEnabled = true;
-        }
-        
-        async initialize() {
-            // يمكن تحميل قوالب مخصصة
-        }
-        
-        createNoteTemplates() {
+        // التحقق من الذاكرة طويلة المدى
+        const longTermItem = this.longTerm.get(cacheKey);
+        if (longTermItem && Date.now() - longTermItem.timestamp < 86400000) {
+            this.shortTerm.set(cacheKey, longTermItem);
             return {
-                high_confidence: [
-                    'نتيجة ممتازة - تطابق قوي',
-                    'معلومات دقيقة وموثوقة',
-                    'مصدر موثوق به'
-                ],
-                medium_confidence: [
-                    'نتيجة جيدة - قد تحتاج للتأكيد',
-                    'معلومات مفيدة للمراجعة',
-                    'قيمة إضافية للبحث'
-                ],
-                low_confidence: [
-                    'اقتراح أولي - يحتاج للتحقق',
-                    'معلومات عامة للمراجعة',
-                    'بداية جيدة للبحث'
-                ],
-                decision_link: [
-                    'مرتبط بقرار 104 للحوافز',
-                    'يمكن أن يستفيد من الحوافز الاستثمارية',
-                    'مشمول في برامج الدعم الحكومي'
-                ],
-                area_link: [
-                    'مناسب للمناطق الصناعية',
-                    'يتوافق مع سياسات التنمية',
-                    'مرتبط بخطط التنمية المحلية'
-                ],
-                licensing: [
-                    'يتطلب تراخيص خاصة',
-                    'يخضع لاشتراطات جهات متعددة',
-                    'يحتاج موافقات رسمية'
-                ],
-                technical: [
-                    'يحتاج متطلبات فنية',
-                    'يخضع للمواصفات القياسية',
-                    'يتطلب خبرة تقنية'
-                ]
+                results: longTermItem.results,
+                cacheTime: longTermItem.cacheTime
             };
         }
         
-        generateIntelligentNotes(result, queryAnalysis, intentAnalysis, dbKey) {
-            const notes = [];
+        return null;
+    }
+    
+    set(query, results, cacheTime, options) {
+        const cacheKey = this.createCacheKey(query, options);
+        const cacheItem = {
+            results: results,
+            cacheTime: cacheTime,
+            timestamp: Date.now(),
+            query: query,
+            options: options
+        };
+        
+        this.shortTerm.set(cacheKey, cacheItem);
+        
+        if (this.isWorthyOfLongTerm(results)) {
+            this.longTerm.set(cacheKey, cacheItem);
             
-            // ملاحظات بناءً على الثقة
-            const score = result.score || result.finalScore || 0;
-            if (score >= 0.8) {
-                notes.push(this.getRandomNote('high_confidence'));
-            } else if (score >= 0.6) {
-                notes.push(this.getRandomNote('medium_confidence'));
-            } else if (score >= 0.4) {
-                notes.push(this.getRandomNote('low_confidence'));
+            if (this.longTerm.size > this.maxSize) {
+                this.cleanupLongTermCache();
             }
-            
-            // ملاحظات بناءً على النية
-            if (intentAnalysis) {
-                if (intentAnalysis.primary === 'بحث_عن_حوافز' && dbKey === 'activities') {
-                    notes.push(this.getRandomNote('decision_link'));
-                }
-                
-                if (intentAnalysis.primary === 'بحث_عن_تراخيص') {
-                    notes.push(this.getRandomNote('licensing'));
-                }
-                
-                if (intentAnalysis.secondary === 'معرفة_المتطلبات') {
-                    notes.push(this.getRandomNote('technical'));
-                }
-            }
-            
-            // ملاحظات بناءً على محتوى النتيجة
-            const text = result.metadata?.text_preview || '';
-            if (text.includes('منطقة') || text.includes('صناعية')) {
-                notes.push(this.getRandomNote('area_link'));
-            }
-            
-            // ملاحظات بناءً على الروابط الذكية
-            if (result.smartLinked) {
-                notes.push(`معلومات إضافية من الربط الذكي (ثقة: ${(result.linkingConfidence * 100).toFixed(0)}%)`);
-            }
-            
-            return notes.slice(0, 3); // أقصى 3 ملاحظات
         }
         
-        getRandomNote(category) {
-            const notes = this.noteTemplates[category];
-            if (!notes || notes.length === 0) return '';
-            return notes[Math.floor(Math.random() * notes.length)];
+        if (this.shortTerm.size % 10 === 0) {
+            this.saveToStorage();
         }
     }
     
-    // 🔥 الجديد: التخزين المؤقت متعدد المستويات
-    class MultiLevelCache {
-        constructor() {
-            this.shortTerm = new Map();    // ذاكرة الجلسة
-            this.longTerm = new Map();     // ذاكرة التخزين المحلي
-            this.patternCache = new Map(); // أنماط البحث
-            this.maxSize = 100;
+    createCacheKey(query, options) {
+        const optionsStr = JSON.stringify(options || {});
+        return `${query}_${this.hashString(optionsStr)}`;
+    }
+    
+    hashString(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = ((hash << 5) - hash) + str.charCodeAt(i);
+            hash |= 0;
         }
+        return hash.toString(16);
+    }
+    
+    isWorthyOfLongTerm(results) {
+        const hasGoodResults = 
+            results.activities.length > 0 || 
+            results.decision104.length > 0 || 
+            results.industrial.length > 0;
         
-        get(query, options) {
-            const cacheKey = this.createCacheKey(query, options);
-            
-            // التحقق من الذاكرة قصيرة المدى أولاً
-            const shortTermItem = this.shortTerm.get(cacheKey);
-            if (shortTermItem && Date.now() - shortTermItem.timestamp < 300000) { // 5 دقائق
-                return {
-                    results: shortTermItem.results,
-                    cacheTime: shortTermItem.cacheTime
-                };
+        const hasHighConfidence = 
+            results.activities.some(r => r.score > 0.7) ||
+            results.decision104.some(r => r.score > 0.7) ||
+            results.industrial.some(r => r.score > 0.7);
+        
+        return hasGoodResults && hasHighConfidence;
+    }
+    
+    cleanupLongTermCache() {
+        const entries = Array.from(this.longTerm.entries());
+        entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+        
+        const toRemove = entries.slice(0, Math.floor(this.maxSize * 0.1));
+        toRemove.forEach(([key]) => this.longTerm.delete(key));
+    }
+    
+    async load() {
+        try {
+            const saved = localStorage.getItem('vector_engine_cache_v5');
+            if (saved) {
+                const data = JSON.parse(saved);
+                this.longTerm = new Map(data.longTerm || []);
+                console.log(`📦 تم تحميل ${this.longTerm.size} عنصر من التخزين المؤقت`);
             }
-            
-            // التحقق من الذاكرة طويلة المدى
-            const longTermItem = this.longTerm.get(cacheKey);
-            if (longTermItem && Date.now() - longTermItem.timestamp < 86400000) { // 24 ساعة
-                // نقل إلى الذاكرة قصيرة المدى
-                this.shortTerm.set(cacheKey, longTermItem);
-                return {
-                    results: longTermItem.results,
-                    cacheTime: longTermItem.cacheTime
-                };
-            }
-            
-            return null;
+        } catch (e) {
+            console.warn('⚠️ فشل تحميل التخزين المؤقت:', e);
         }
-        
-        set(query, results, cacheTime, options) {
-            const cacheKey = this.createCacheKey(query, options);
-            const cacheItem = {
-                results: results,
-                cacheTime: cacheTime,
+    }
+    
+    saveToStorage() {
+        try {
+            const data = {
+                longTerm: Array.from(this.longTerm.entries()),
                 timestamp: Date.now(),
-                query: query,
-                options: options
+                version: 'v5'
             };
-            
-            // التخزين في الذاكرة قصيرة المدى
-            this.shortTerm.set(cacheKey, cacheItem);
-            
-            // إذا كانت جيدة، تخزين في الذاكرة طويلة المدى
-            if (this.isWorthyOfLongTerm(results)) {
-                this.longTerm.set(cacheKey, cacheItem);
-                
-                // التحكم في الحجم
-                if (this.longTerm.size > this.maxSize) {
-                    this.cleanupLongTermCache();
-                }
-            }
-            
-            // حفظ في localStorage بشكل دوري
-            if (this.shortTerm.size % 10 === 0) {
-                this.saveToStorage();
-            }
-        }
-        
-        createCacheKey(query, options) {
-            const optionsStr = JSON.stringify(options || {});
-            return `${query}_${this.hashString(optionsStr)}`;
-        }
-        
-        hashString(str) {
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-                hash = ((hash << 5) - hash) + str.charCodeAt(i);
-                hash |= 0; // تحويل إلى عدد صحيح 32-bit
-            }
-            return hash.toString(16);
-        }
-        
-        isWorthyOfLongTerm(results) {
-            // التحقق من جودة النتائج
-            const hasGoodResults = 
-                results.activities.length > 0 || 
-                results.decision104.length > 0 || 
-                results.industrial.length > 0;
-            
-            const hasHighConfidence = 
-                results.activities.some(r => r.score > 0.7) ||
-                results.decision104.some(r => r.score > 0.7) ||
-                results.industrial.some(r => r.score > 0.7);
-            
-            return hasGoodResults && hasHighConfidence;
-        }
-        
-        cleanupLongTermCache() {
-            // إزالة أقدم العناصر
-            const entries = Array.from(this.longTerm.entries());
-            entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-            
-            const toRemove = entries.slice(0, Math.floor(this.maxSize * 0.1)); // إزالة 10% الأقدم
-            toRemove.forEach(([key]) => this.longTerm.delete(key));
-        }
-        
-        async load() {
-            try {
-                const saved = localStorage.getItem('vector_engine_cache_v5');
-                if (saved) {
-                    const data = JSON.parse(saved);
-                    this.longTerm = new Map(data.longTerm || []);
-                    console.log(`📦 تم تحميل ${this.longTerm.size} عنصر من التخزين المؤقت`);
-                }
-            } catch (e) {
-                console.warn('⚠️ فشل تحميل التخزين المؤقت:', e);
-            }
-        }
-        
-        saveToStorage() {
-            try {
-                const data = {
-                    longTerm: Array.from(this.longTerm.entries()),
-                    timestamp: Date.now(),
-                    version: 'v5'
-                };
-                localStorage.setItem('vector_engine_cache_v5', JSON.stringify(data));
-            } catch (e) {
-                console.warn('⚠️ فشل حفظ التخزين المؤقت:', e);
-            }
-        }
-        
-        size() {
-            return this.longTerm.size + this.shortTerm.size;
+            localStorage.setItem('vector_engine_cache_v5', JSON.stringify(data));
+        } catch (e) {
+            console.warn('⚠️ فشل حفظ التخزين المؤقت:', e);
         }
     }
     
-    // 🔥 الجديد: معالج النصوص العربي المحسن
-    class EnhancedArabicTextProcessor {
-        constructor() {
-            this.EGYPTIAN_GOVERNORATES = [
-                'القاهرة', 'الإسكندرية', 'الجيزة', 'القليوبية', 'الشرقية',
-                'الدقهلية', 'البحيرة', 'المنوفية', 'الغربية', 'كفر الشيخ',
-                'دمياط', 'بورسعيد', 'الإسماعيلية', 'السويس', 'شمال سيناء',
-                'جنوب سيناء', 'الفيوم', 'بني سويف', 'المنيا', 'أسيوط',
-                'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'البحر الأحمر', 'الوادي الجديد', 'مطروح'
-            ];
-            
-            this.INDUSTRIAL_AREA_PATTERNS = [
-                { name: 'العاشر من رمضان', aliases: ['العاشر', '10 رمضان'], egyptianNames: ['عاشر رمضان'] },
-                { name: 'السادات', aliases: ['مدينة السادات'], egyptianNames: ['السادات'] },
-                { name: 'برج العرب', aliases: ['برج'], egyptianNames: ['برج العرب'] },
-                { name: 'زهراء المعادي', aliases: ['زهراء', 'الزهراء'], egyptianNames: ['الزهراء'] },
-                { name: '6 أكتوبر', aliases: ['أكتوبر', 'ستة أكتوبر'], egyptianNames: ['ستة اكتوبر'] },
-                { name: 'بدر', aliases: ['مدينة بدر'], egyptianNames: ['بدر'] },
-                { name: 'العبور', aliases: ['مدينة العبور'], egyptianNames: ['العبور'] }
-            ];
-            
-            this.ACTIVITY_PATTERNS = [
-                { formal: 'فندق', egyptian: ['أوتيل', 'فندق سياحي'], category: 'سياحة', weight: 1.5 },
-                { formal: 'مصنع', egyptian: ['معمل', 'مصنع'], category: 'صناعي', weight: 1.4 },
-                { formal: 'مخبز', egyptian: ['فرن', 'مخبز'], category: 'غذائي', weight: 1.3 },
-                { formal: 'ورشة', egyptian: ['ورشة', 'وراشة'], category: 'صناعي', weight: 1.2 },
-                { formal: 'مطعم', egyptian: ['مطعم', 'اكل'], category: 'غذائي', weight: 1.3 },
-                { formal: 'صيدلية', egyptian: ['صيدلية', 'دوا'], category: 'صحي', weight: 1.4 }
-            ];
-            
-            this.EGYPTIAN_STOP_WORDS = [
-                'يعني', 'خلاص', 'طب', 'تمام', 'يا', 'يا ريت',
-                'مش', 'ممكن', 'بس', 'على فكرة', 'أصل', 'بالظبط',
-                'بصراحة', 'طيب', 'أها', 'ايوة', 'اه', 'لا'
-            ];
-        }
+    size() {
+        return this.longTerm.size + this.shortTerm.size;
+    }
+}
+
+// 🔥 الجديد: معالج النصوص العربي المحسن
+class EnhancedArabicTextProcessor {
+    constructor() {
+        this.EGYPTIAN_GOVERNORATES = [
+            'القاهرة', 'الإسكندرية', 'الجيزة', 'القليوبية', 'الشرقية',
+            'الدقهلية', 'البحيرة', 'المنوفية', 'الغربية', 'كفر الشيخ',
+            'دمياط', 'بورسعيد', 'الإسماعيلية', 'السويس', 'شمال سيناء',
+            'جنوب سيناء', 'الفيوم', 'بني سويف', 'المنيا', 'أسيوط',
+            'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'البحر الأحمر', 'الوادي الجديد', 'مطروح'
+        ];
         
-        normalizeEgyptianText(text) {
-            if (!text || !text.trim()) return '';
-            
-            let normalized = text.toLowerCase();
-            
-            // تحويل العامية إلى فصحى
-            const dialectMap = {
-                'كام': 'كم',
-                'عايز': 'أريد',
-                'عاوز': 'أريد',
-                'عيز': 'أريد',
-                'قول': 'قل',
-                'قولي': 'قل لي',
-                'ايوه': 'نعم',
-                'لأ': 'لا',
-                'مش': 'ليس',
-                'يعني ايه': 'ما معنى',
-                'ايه هو': 'ما هو',
-                'بكام': 'بكم',
-                'فين': 'أين',
-                'عامل': 'يعمل',
-                'هيعمل': 'سيعمل'
-            };
-            
-            Object.entries(dialectMap).forEach(([dialect, formal]) => {
-                normalized = normalized.replace(new RegExp(dialect, 'g'), formal);
-            });
-            
-            // إزالة كلمات التوقف المصرية
-            this.EGYPTIAN_STOP_WORDS.forEach(word => {
-                const regex = new RegExp(`\\b${word}\\b`, 'g');
-                normalized = normalized.replace(regex, '');
-            });
-            
-            // إزالة المسافات الزائدة
-            normalized = normalized.replace(/\s+/g, ' ').trim();
-            
-            return normalized;
-        }
+        this.INDUSTRIAL_AREA_PATTERNS = [
+            { name: 'العاشر من رمضان', aliases: ['العاشر', '10 رمضان'], egyptianNames: ['عاشر رمضان'] },
+            { name: 'السادات', aliases: ['مدينة السادات'], egyptianNames: ['السادات'] },
+            { name: 'برج العرب', aliases: ['برج'], egyptianNames: ['برج العرب'] },
+            { name: 'زهراء المعادي', aliases: ['زهراء', 'الزهراء'], egyptianNames: ['الزهراء'] },
+            { name: '6 أكتوبر', aliases: ['أكتوبر', 'ستة أكتوبر'], egyptianNames: ['ستة اكتوبر'] },
+            { name: 'بدر', aliases: ['مدينة بدر'], egyptianNames: ['بدر'] },
+            { name: 'العبور', aliases: ['مدينة العبور'], egyptianNames: ['العبور'] }
+        ];
+        
+        this.ACTIVITY_PATTERNS = [
+            { formal: 'فندق', egyptian: ['أوتيل', 'فندق سياحي'], category: 'سياحة', weight: 1.5 },
+            { formal: 'مصنع', egyptian: ['معمل', 'مصنع'], category: 'صناعي', weight: 1.4 },
+            { formal: 'مخبز', egyptian: ['فرن', 'مخبز'], category: 'غذائي', weight: 1.3 },
+            { formal: 'ورشة', egyptian: ['ورشة', 'وراشة'], category: 'صناعي', weight: 1.2 },
+            { formal: 'مطعم', egyptian: ['مطعم', 'اكل'], category: 'غذائي', weight: 1.3 },
+            { formal: 'صيدلية', egyptian: ['صيدلية', 'دوا'], category: 'صحي', weight: 1.4 }
+        ];
+        
+        this.EGYPTIAN_STOP_WORDS = [
+            'يعني', 'خلاص', 'طب', 'تمام', 'يا', 'يا ريت',
+            'مش', 'ممكن', 'بس', 'على فكرة', 'أصل', 'بالظبط',
+            'بصراحة', 'طيب', 'أها', 'ايوة', 'اه', 'لا'
+        ];
+    }
+    
+    normalizeEgyptianText(text) {
+        if (!text || !text.trim()) return '';
+        
+        let normalized = text.toLowerCase();
+        
+        const dialectMap = {
+            'كام': 'كم',
+            'عايز': 'أريد',
+            'عاوز': 'أريد',
+            'عيز': 'أريد',
+            'قول': 'قل',
+            'قولي': 'قل لي',
+            'ايوه': 'نعم',
+            'لأ': 'لا',
+            'مش': 'ليس',
+            'يعني ايه': 'ما معنى',
+            'ايه هو': 'ما هو',
+            'بكام': 'بكم',
+            'فين': 'أين',
+            'عامل': 'يعمل',
+            'هيعمل': 'سيعمل'
+        };
+        
+        Object.entries(dialectMap).forEach(([dialect, formal]) => {
+            normalized = normalized.replace(new RegExp(dialect, 'g'), formal);
+        });
+        
+        this.EGYPTIAN_STOP_WORDS.forEach(word => {
+            const regex = new RegExp(`\\b${word}\\b`, 'g');
+            normalized = normalized.replace(regex, '');
+        });
+        
+        normalized = normalized.replace(/\s+/g, ' ').trim();
+        
+        return normalized;
     }
 }
 
@@ -1977,4 +1965,5 @@ window.vectorEngine = {
 };
 
 console.log('✅ Vector Engine V5 - المحرك الدلالي الذكي المتطور جاهز!');
+
 console.log('🚀 ميزات V5: بحث متعدد المستويات + ذكاء اصطناعي + ربط ذكي + أداء فائق');
