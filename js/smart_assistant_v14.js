@@ -92,10 +92,11 @@ class IntelligentSmartAssistantV14 {
         // تحميل القواعد النصية الجديدة
         this.loadTextDatabases();
 
+        // استبدل السطور من 94-98 بهذا الكود:
         if (this.db.activities && this.db.industrial) {
-        this.buildGeniusVocab(); // أو buildDynamicVocabulary حسب ما سميتها
-        console.log("📚 تم بناء المعجم الديناميكي بنجاح");
-         }
+        // تمت إزالة buildGeniusVocab() لأنها غير معرفة
+        console.log("📚 تم تحميل قواعد البيانات النصية بنجاح");
+        }
         
         // تهيئة ذاكرة المحادثة
         this.restoreConversation();
@@ -1660,3 +1661,4 @@ window.finalAssistant = window.finalAssistantV14; // للتوافق مع الإ�
 console.log('✅ Smart Assistant V14 - المساعد الذكي المحسن جاهز!');
 
 console.log('🔗 نظام الربط الذكي:', window.finalAssistantV14.linkingEnabled ? 'مفعل' : 'معطل');
+
