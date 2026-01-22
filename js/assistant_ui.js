@@ -429,6 +429,36 @@ saveSettings() {
     }
 }
 
+// أضف هذا الكود بعد دالة restoreSettings وقبل createFallbackUI في ملف assistant_ui.js
+
+// ==================== دوال تحديث الحالة ====================
+updateStatusDisplay() {
+    // تحديث حالة الربط الذكي
+    if (this.currentAssistant) {
+        const linkingStatus = this.currentAssistant.linkingEnabled ? 'نشط' : 'معطل';
+        this.elements.linkingStatus.innerHTML = `
+            <i class="fas fa-link"></i>
+            <span>الربط الذكي: ${linkingStatus}</span>
+        `;
+    }
+    
+    // تحديث حالة الذاكرة
+    const memoryCount = this.context?.conversationDepth || 0;
+    this.elements.memoryStatus.innerHTML = `
+        <i class="fas fa-memory"></i>
+        <span>الذاكرة: ${memoryCount} رسالة</span>
+    `;
+    
+    // تحديث الحالة العامة
+    if (this.currentAssistant) {
+        this.elements.assistantStatus.className = 'avatar-status status-active';
+        this.elements.assistantStatus.title = 'المساعد نشط';
+    } else {
+        this.elements.assistantStatus.className = 'avatar-status status-inactive';
+        this.elements.assistantStatus.title = 'المساعد غير متصل';
+    }
+}
+    
 createFallbackUI() {
     console.log('🔄 إنشاء واجهة الطوارئ البسيطة...');
     
@@ -982,3 +1012,4 @@ document.addEventListener('DOMContentLoaded', () => {
     window.assistantUI = window.smartAssistantUI; // للتوافق
 
 });
+
