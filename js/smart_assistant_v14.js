@@ -877,6 +877,78 @@ class IntelligentSmartAssistantV14 {
         
         return entities;
     }
+
+    
+    // ==================== دوال الربط الذكي الجديدة ====================
+    
+    extractRelatedEntities(query) {
+        // استخراج الكيانات ذات الصلة من الاستعلام للربط الذكي
+        const entities = this.extractEntities(query);
+        const related = [];
+        
+        // إضافة كيانات إضافية للربط
+        const text = query.toLowerCase();
+        
+        // إضافة كيانات القرار 104
+        if (text.includes('104') || text.includes('قرار')) {
+            related.push({ type: 'decision', text: 'قرار 104', weight: 1.5 });
+        }
+        
+        // إضافة كيانات المناطق
+        const areaTerms = ['منطقة', 'صناعية', 'مدينة', 'العاشر', 'السادات', 'برج العرب'];
+        areaTerms.forEach(term => {
+            if (text.includes(term)) {
+                related.push({ type: 'area', text: term, weight: 1.3 });
+            }
+        });
+        
+        // إضافة كيانات الأنشطة
+        const activityTerms = ['فندق', 'مصنع', 'مخبز', 'ورشة', 'مطعم'];
+        activityTerms.forEach(term => {
+            if (text.includes(term)) {
+                related.push({ type: 'activity', text: term, weight: 1.4 });
+            }
+        });
+        
+        return [...entities, ...related];
+    }
+    
+    assessLinkingPotential(query) {
+        // تقييم إمكانية الربط للاستعلام
+        const text = query.toLowerCase();
+        let potential = 0;
+        
+        // إذا كان الاستعلام يحتوي على مصطلحات متعددة، فهناك إمكانية ربط أعلى
+        const terms = text.split(/\s+/).length;
+        if (terms >= 3) potential += 0.3;
+        
+        // إذا كان الاستعلام يحتوي على أرقام (مثل 104)
+        if (/\d+/.test(text)) potential += 0.2;
+        
+        // إذا كان الاستعلام يحتوي على كلمات ربط
+        const linkingWords = ['و', 'أو', 'بعد', 'قبل', 'مع', 'في'];
+        linkingWords.forEach(word => {
+            if (text.includes(word)) potential += 0.1;
+        });
+        
+        // إذا كان الاستعلام يحتوي على مصطلحات متعددة من قواعد بيانات مختلفة
+        const dbTerms = {
+            decision: ['104', 'قرار', 'حافز'],
+            area: ['منطقة', 'صناعية', 'مدينة'],
+            activity: ['فندق', 'مصنع', 'مخبز']
+        };
+        
+        let dbCount = 0;
+        Object.values(dbTerms).forEach(termList => {
+            if (termList.some(term => text.includes(term))) {
+                dbCount++;
+            }
+        });
+        
+        if (dbCount >= 2) potential += 0.3;
+        
+        return Math.min(1, potential);
+    }
     
     needsClarification(analysis) {
         // نفس الدالة في V13
@@ -1661,4 +1733,5 @@ window.finalAssistant = window.finalAssistantV14; // للتوافق مع الإ�
 console.log('✅ Smart Assistant V14 - المساعد الذكي المحسن جاهز!');
 
 console.log('🔗 نظام الربط الذكي:', window.finalAssistantV14.linkingEnabled ? 'مفعل' : 'معطل');
+
 
