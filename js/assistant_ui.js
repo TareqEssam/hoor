@@ -646,49 +646,89 @@ class AssistantUIV2 {
     
     // ==================== المعالجة الأساسية ====================
     async processQuery(query) {
-        if (!query.trim()) return;
-        
-        // إضافة رسالة المستخدم
-        this.addMessage('user', query);
-        
-        // التحقق من وجود المساعد
-        if (!this.currentAssistant) {
-            this.showError('المساعد الذكي غير متوفر. يرجى التحديث.');
-            return;
-        }
-        
-        // عرض مؤشر التفكير
+    if (!query.trim()) return;
+    
+    // إضافة رسالة المستخدم
+    this.addMessage('user', query);
+    
+    // التحقق من وجود المساعد
+    if (!this.currentAssistant) {
+        this.showError('المساعد الذكي غير متوفر. يرجى التحديث.');
+        return;
+    }
+    
+    // التحقق من جاهزية محرك المتجهات
+    if (window.vEngine && !window.vEngine.isReady) {
+        console.log('⏳ جاري انتظار تهيئة محرك المتجهات...');
         this.showThinking(true);
+        this.elements.thinkingSubtitle.textContent = 'جاري تهيئة محرك البحث...';
         
         try {
-            console.log(`🤖 إرسال استعلام إلى المساعد V14: "${query}"`);
-            
-            // إرسال الاستعلام
-            const response = await this.currentAssistant.query(query);
-            
-            // إخفاء مؤشر التفكير
-            this.showThinking(false);
-            
-            // تحديث سياق المحادثة
-            this.context.lastQuery = query;
-            this.context.lastResponse = response;
-            this.context.conversationDepth++;
-            
-            // التعامل مع الحالات الخاصة
-            if (this.handleSpecialCases(response)) return;
-            
-            // تنسيق وعرض الرد
-            this.displayResponse(response);
-            
-            // تحديث الإحصائيات والعرض
-            this.updateAfterResponse(response);
-            
-        } catch (error) {
-            console.error('❌ خطأ في معالجة الاستعلام:', error);
-            this.showThinking(false);
-            this.showError(`حدث خطأ تقني: ${error.message}`);
+            await new Promise((resolve) => {
+                const checkReady = setInterval(() => {
+                    if (window.vEngine.isReady) {
+                        clearInterval(checkReady);
+                        resolve();
+                    }
+                }, 100);
+            });
+        } catch (e) {
+            console.warn('⚠️ مهلة انتظار محرك المتجهات');
         }
     }
+    
+    // عرض مؤشر التفكير
+    this.showThinking(true);
+    
+    try {
+        console.log(`🤖 إرسال استعلام إلى المساعد V14: "${query}"`);
+        
+        // التحقق من تهيئة محرك الربط
+        if (this.currentAssistant.dataLinker && 
+            !this.currentAssistant.linkingEnabled) {
+            console.log('⚠️ تم تعطيل الربط الذكي مؤقتاً');
+        }
+        
+        // إرسال الاستعلام مع مهلة زمنية
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('مهلة انتظار طويلة')), 10000)
+        );
+        
+        const queryPromise = this.currentAssistant.query(query);
+        const response = await Promise.race([queryPromise, timeoutPromise]);
+        
+        // إخفاء مؤشر التفكير
+        this.showThinking(false);
+        
+        // تحديث سياق المحادثة
+        this.context.lastQuery = query;
+        this.context.lastResponse = response;
+        this.context.conversationDepth++;
+        
+        // التعامل مع الحالات الخاصة
+        if (this.handleSpecialCases(response)) return;
+        
+        // تنسيق وعرض الرد
+        this.displayResponse(response);
+        
+        // تحديث الإحصائيات والعرض
+        this.updateAfterResponse(response);
+        
+    } catch (error) {
+        console.error('❌ خطأ في معالجة الاستعلام:', error);
+        this.showThinking(false);
+        
+        // عرض رسالة خطأ مناسبة
+        if (error.message === 'مهلة انتظار طويلة') {
+            this.showError('استغرقت العملية وقتاً طويلاً. يرجى المحاولة مرة أخرى.');
+        } else {
+            this.showError(`حدث خطأ تقني: ${error.message || 'غير معروف'}`);
+        }
+        
+        // محاولة استخدام الوضع التقليدي
+        this.fallbackToTraditionalSearch(query);
+    }
+}
     
     // ==================== عرض الرد ====================
     async displayResponse(response) {
@@ -1394,5 +1434,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.smartAssistantUI = new AssistantUIV2();
     window.assistantUI = window.smartAssistantUI; // للتوافق
 });
+
 
 
