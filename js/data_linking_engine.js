@@ -632,13 +632,13 @@ class DataLinkingEngine {
         
         // 1. إذا كان هناك سياق محادثة متطابق
         if (context.conversationHistory) {
-            const convoText = context.conversationHistory.join(' ');
-            const itemText = this.getItemText(linkedData.data);
-            
-            if (convoText.includes(itemText.substring(0, 20))) {
-                confidenceBoost += 0.15;
-            }
-        }
+        const convoText = context.conversationHistory.join(' ');
+        const itemText = this.getItemText(linkedData.data);
+    
+        if (convoText.includes(itemText.substring(0, 20))) {
+        confidenceBoost += 0.15;
+       }
+      }
         
         // 2. إذا كان العنصر شائعاً (تم ربطه مسبقاً بنجاح)
         const fingerprint = linkedData.fingerprint;
@@ -783,6 +783,7 @@ window.DataLinkingEngine = DataLinkingEngine;
 
 
 console.log('✅ DataLinkingEngine V1.0 جاهز للتوسيع');
+
 
 
 
