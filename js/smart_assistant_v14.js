@@ -677,12 +677,23 @@ setDataLinker(linker) {
             }
             
             if (savedContext) {
-                this.memory.context = { ...this.memory.context, ...JSON.parse(savedContext) };
+                const parsedContext = JSON.parse(savedContext);
+                // 🔥 الحل العلمي: إعادة تحويل البيانات إلى Map
+                if (parsedContext.linkingContext) {
+                    // إذا كانت البيانات مخزنة كمصفوفة إدخالات، نحولها لـ Map
+                    const entries = Array.isArray(parsedContext.linkingContext) ? 
+                                    parsedContext.linkingContext : 
+                                    Object.entries(parsedContext.linkingContext);
+                    parsedContext.linkingContext = new Map(entries);
+                } else {
+                    parsedContext.linkingContext = new Map();
+                }
+                this.memory.context = { ...this.memory.context, ...parsedContext };
             }
-            
-            console.log(`📚 تم استرجاع ${this.memory.conversation.length} رسالة من المحادثة`);
+            console.log(`📚 تم استرجاع ${this.memory.conversation.length} رسالة وسياق الربط الذكي`);
         } catch (e) {
             console.warn('⚠️ فشل استرجاع المحادثة:', e);
+            this.memory.context.linkingContext = new Map(); // تأمين الذاكرة في حالة الفشل
         }
     }
     
@@ -1793,6 +1804,7 @@ window.finalAssistant = window.finalAssistantV14; // للتوافق مع الإ�
 console.log('✅ Smart Assistant V14 - المساعد الذكي المحسن جاهز!');
 
 console.log('🔗 نظام الربط الذكي:', window.finalAssistantV14.linkingEnabled ? 'مفعل' : 'معطل');
+
 
 
 
