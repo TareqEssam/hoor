@@ -179,7 +179,20 @@ class DataLinkingEngine {
         
         return 'semantic_keywords';
     }
-    
+    // ⬇️ الصق الكود الجديد هنا تماماً ⬇️
+
+    selectIndustrialStrategy(textPreview, context) {
+        // إذا كان الاستعلام يحتوي على مسميات جغرافية أو أرقام قرارات
+        if (/\d+/.test(textPreview) || textPreview.includes('قرار')) {
+            return 'technical_pattern';
+        }
+        return 'semantic_keywords';
+    }
+
+    selectDecision104Strategy(textPreview, context) {
+        // القرار 104 يحتاج دائماً لمطابقة دلالية عالية الدقة
+        return 'enhanced_semantic';
+    }
     // ==================== تنفيذ الربط ====================
     async executeLinking(vectorResult, dbType, strategy, context) {
         const targetDB = this.fullDatabases[dbType];
@@ -760,3 +773,4 @@ window.DataLinkingEngine = DataLinkingEngine;
 
 
 console.log('✅ DataLinkingEngine V1.0 جاهز للتوسيع');
+
