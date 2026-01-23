@@ -15,7 +15,7 @@
 
 class IntelligentSmartAssistantV14 {
     constructor() {
-        // الذاكرة المتقدمة
+        // 1. الذاكرة
         this.memory = {
             conversation: [],
             context: {
@@ -27,57 +27,63 @@ class IntelligentSmartAssistantV14 {
                 timestamp: null,
                 lastQuery: null,
                 lastResponse: null,
-                linkingContext: new Map() // سياق الربط الجديد
+                linkingContext: new Map(),
+                vocab: null // سيتم ملؤه لاحقاً
             },
             preferences: {
                 languageLevel: 'formal',
                 detailLevel: 'detailed',
                 confirmationMode: 'auto',
-                useSmartLinking: true // تفعيل الربط الذكي
+                useSmartLinking: true
             }
         };
-
-        // === دالة بناء المعجم الديناميكي (توضع داخل الكلاس) ===
-    buildGeniusVocab() {
-        console.log("🏗️ جاري بناء المعجم الديناميكي من البيانات الفعلية...");
         
-        // تعريف كائن المعجم داخل المساعد
-        this.vocab = {
-            allNames: new Set(),
-            map: new Map()
-        };
+        // 2. القواعد النصية
+        this.db = { activities: null, industrial: null, decision104: null };
+        this.dataLinker = null;
+        this.linkingEnabled = true;
+        
+        // 3. الإحصائيات ونظام التعلم
+        this.stats = { total: 0, successful: 0, linking: { totalAttempts: 0, successfulLinks: 0 } };
+        this.confirmationSettings = { similarityThreshold: 0.1, maxAlternatives: 3, minLinkingConfidence: 0.4 };
+        this.learning = { queryPatterns: new Map(), successfulLinks: new Map() };
+        
+        this.init();
+    } // 👈 نهاية الـ constructor (تأكد من وجود هذا القوس)
 
-        // 1. قراءة أسماء المناطق والمحافظات من قاعدة البيانات
+    // ==================== الدوال الأساسية ====================
+
+    async init() {
+        console.log('🚀 Smart Assistant V14 - البدء...');
+        this.loadTextDatabases();
+        
+        // تفعيل المعجم فوراً بعد تحميل البيانات
+        this.buildGeniusVocab();
+        
+        this.restoreConversation();
+        await this.initializeDataLinker();
+        
+        if (window.vEngine) window.vEngine.init();
+        console.log('✅ المساعد V14 جاهز والمعجم مفعّل');
+    }
+
+    buildGeniusVocab() {
+        console.log("🏗️ بناء المعجم الديناميكي...");
+        this.vocab = { allNames: new Set(), map: new Map() };
+
         if (this.db.industrial) {
             this.db.industrial.forEach(area => {
-                if (area.name) {
-                    const name = area.name.toLowerCase().trim();
-                    this.vocab.allNames.add(name);
-                    this.vocab.map.set(name, 'industrial');
-                }
-                if (area.governorate) {
-                    const gov = area.governorate.toLowerCase().trim();
-                    this.vocab.allNames.add(gov);
-                }
+                if (area.name) this.vocab.allNames.add(area.name.toLowerCase().trim());
+                if (area.governorate) this.vocab.allNames.add(area.governorate.toLowerCase().trim());
             });
         }
 
-        // 2. قراءة أسماء الأنشطة والكلمات المفتاحية
         if (this.db.activities) {
             this.db.activities.forEach(act => {
-                if (act.text) {
-                    const text = act.text.toLowerCase().trim();
-                    this.vocab.allNames.add(text);
-                    this.vocab.map.set(text, 'activity');
-                }
-                // إضافة الكلمات المفتاحية للمعجم أيضاً
-                if (act.keywords) {
-                    act.keywords.forEach(key => this.vocab.allNames.add(key.toLowerCase().trim()));
-                }
+                if (act.text) this.vocab.allNames.add(act.text.toLowerCase().trim());
+                if (act.keywords) act.keywords.forEach(k => this.vocab.allNames.add(k.toLowerCase().trim()));
             });
         }
-
-        console.log(`✅ تم بناء المعجم بنجاح: ${this.vocab.allNames.size} مسمى.`);
     }
         // القواعد النصية الجديدة
         this.db = {
@@ -1854,6 +1860,7 @@ window.smartAssistant = window.finalAssistantV14;
 console.log('✅ Smart Assistant V14 - المساعد الذكي المحسن جاهز!');
 
 console.log('🔗 نظام الربط الذكي:', window.finalAssistantV14.linkingEnabled ? 'مفعل' : 'معطل');
+
 
 
 
