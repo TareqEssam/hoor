@@ -1774,11 +1774,3 @@ window.assistantV14 = {
 };
 
 console.log('✅ Smart Assistant V14 - تم الإصلاح الشامل وجاهز للعمل!');
-
-
-
-
-
-
-
-
