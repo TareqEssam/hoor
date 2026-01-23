@@ -307,19 +307,23 @@ class DataLinkingEngine {
     }
     
     calculateContextualScore(textPreview, item, context) {
-        // الربط بناءً على سياق المحادثة
         let score = this.calculateKeywordScore(textPreview, item);
         
-        if (context.conversationHistory) {
-            // البحث عن أنماط في تاريخ المحادثة
-            const conversationContext = context.conversationHistory.join(' ');
+        // 🛡️ معالجة احترافية لـ conversationHistory (سواء كانت Array أو String)
+        if (context && context.conversationHistory) {
+            let historyText = "";
             
-            // إذا كان هذا العنصر مذكوراً سابقاً في المحادثة
-            if (conversationContext.includes(this.getItemText(item).substring(0, 30))) {
-                score += 0.3;
+            if (Array.isArray(context.conversationHistory)) {
+                historyText = context.conversationHistory.join(' ');
+            } else if (typeof context.conversationHistory === 'string') {
+                historyText = context.conversationHistory;
+            }
+
+            const itemText = this.getItemText(item).substring(0, 30);
+            if (historyText && historyText.includes(itemText)) {
+                score += 0.3; // تعزيز النتيجة بناءً على سياق المحادثة
             }
         }
-        
         return Math.min(1, score);
     }
     
@@ -779,5 +783,6 @@ window.DataLinkingEngine = DataLinkingEngine;
 
 
 console.log('✅ DataLinkingEngine V1.0 جاهز للتوسيع');
+
 
 
