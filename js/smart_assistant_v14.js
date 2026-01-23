@@ -276,6 +276,11 @@ setDataLinker(linker) {
     // ==================== نظام الربط الذكي المحسن ====================
     async enhancedFindActivityData(id, metadata) {
         if (!this.db.activities) return null;
+        // 🛡️ فحص أمان إضافي
+        if (!(this.memory.context.linkingContext instanceof Map)) {
+            console.warn("🔄 إعادة تهيئة linkingContext كـ Map");
+            this.memory.context.linkingContext = new Map();
+        }
         
         // التحقق من الذاكرة المؤقتة أولاً
         const cacheKey = `activity_${id}_${metadata?.text_preview?.substring(0, 20) || ''}`;
@@ -699,10 +704,12 @@ setDataLinker(linker) {
     
     saveConversation() {
         try {
-            localStorage.setItem('smart_assistant_conversation_v14', 
-                JSON.stringify(this.memory.conversation));
-            localStorage.setItem('smart_assistant_context_v14',
-                JSON.stringify(this.memory.context));
+            const contextToSave = { ...this.memory.context };
+            // 🔥 تحويل الـ Map لمصفوفة ليتمكن JSON من قراءتها
+            contextToSave.linkingContext = Array.from(this.memory.context.linkingContext.entries());
+            
+            localStorage.setItem('smart_assistant_conversation_v14', JSON.stringify(this.memory.conversation));
+            localStorage.setItem('smart_assistant_context_v14', JSON.stringify(contextToSave));
         } catch (e) {
             console.warn('⚠️ فشل حفظ المحادثة:', e);
         }
@@ -1804,6 +1811,7 @@ window.finalAssistant = window.finalAssistantV14; // للتوافق مع الإ�
 console.log('✅ Smart Assistant V14 - المساعد الذكي المحسن جاهز!');
 
 console.log('🔗 نظام الربط الذكي:', window.finalAssistantV14.linkingEnabled ? 'مفعل' : 'معطل');
+
 
 
 
