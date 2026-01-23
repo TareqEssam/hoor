@@ -195,9 +195,15 @@ class DataLinkingEngine {
     }
     // ==================== تنفيذ الربط ====================
     async executeLinking(vectorResult, dbType, strategy, context) {
-        const targetDB = this.fullDatabases[dbType];
+        // 🔥 حل عبقري: توحيد المسميات (المفرد والجمع) لضمان الوصول للبيانات
+        const targetKey = dbType === 'activity' ? 'activities' : dbType;
+        
+        const targetDB = this.fullDatabases[targetKey];
+        
         if (!targetDB || !Array.isArray(targetDB)) {
-            throw new Error(`قاعدة البيانات ${dbType} غير متوفرة`);
+            // إضافة تفاصيل للخطأ لتسهيل التتبع
+            console.error(`❌ خطأ في محرك الربط: المفتاح المستخدم هو [${targetKey}] والقواعد المتاحة هي:`, Object.keys(this.fullDatabases));
+            throw new Error(`قاعدة البيانات ${targetKey} غير متوفرة في الذاكرة`);
         }
         
         const textPreview = vectorResult.metadata?.text_preview || '';
@@ -773,4 +779,5 @@ window.DataLinkingEngine = DataLinkingEngine;
 
 
 console.log('✅ DataLinkingEngine V1.0 جاهز للتوسيع');
+
 
