@@ -85,54 +85,8 @@ class IntelligentSmartAssistantV14 {
             });
         }
     }
-        // القواعد النصية الجديدة
-        this.db = {
-            activities: null,
-            industrial: null,
-            decision104: null
-        };
-        
-        // محرك الربط الذكي
-        this.dataLinker = null;
-        this.linkingEnabled = true;
-        
-        // الإحصائيات المتقدمة المعززة
-        this.stats = { 
-            total: 0, 
-            successful: 0,
-            ambiguous: 0,
-            confirmed: 0,
-            corrected: 0,
-            linking: {
-                totalAttempts: 0,
-                successfulLinks: 0,
-                cacheHits: 0,
-                averageConfidence: 0,
-                strategiesUsed: new Map()
-            }
-        };
-        
-        // إعدادات الاستفسار
-        this.confirmationSettings = {
-            enableForSimilarity: true,
-            similarityThreshold: 0.1,
-            maxAlternatives: 3,
-            askForClarity: true,
-            minLinkingConfidence: 0.4 // الحد الأدنى للثقة في الربط
-        };
-        
-        // نظام التعلم المحسن
-        this.learning = {
-            queryPatterns: new Map(),
-            entityRelations: new Map(),
-            successfulLinks: new Map(),
-            failedPatterns: new Map(),
-            userCorrections: new Map()
-        };
-        
-        this.init();
-    }
-    
+        // ... باقي الكود كما هو (من السطر 90 فصاعداً)
+
     // ==================== التهيئة المحسنة ====================
     async init() {
     console.log('🚀 Smart Assistant V14 - التهيئة المتقدمة...');
@@ -1860,6 +1814,7 @@ window.smartAssistant = window.finalAssistantV14;
 console.log('✅ Smart Assistant V14 - المساعد الذكي المحسن جاهز!');
 
 console.log('🔗 نظام الربط الذكي:', window.finalAssistantV14.linkingEnabled ? 'مفعل' : 'معطل');
+
 
 
 
