@@ -36,7 +36,49 @@ class IntelligentSmartAssistantV14 {
                 useSmartLinking: true // تفعيل الربط الذكي
             }
         };
+
+        // === دالة بناء المعجم الديناميكي (توضع داخل الكلاس) ===
+    buildGeniusVocab() {
+        console.log("🏗️ جاري بناء المعجم الديناميكي من البيانات الفعلية...");
         
+        // تعريف كائن المعجم داخل المساعد
+        this.vocab = {
+            allNames: new Set(),
+            map: new Map()
+        };
+
+        // 1. قراءة أسماء المناطق والمحافظات من قاعدة البيانات
+        if (this.db.industrial) {
+            this.db.industrial.forEach(area => {
+                if (area.name) {
+                    const name = area.name.toLowerCase().trim();
+                    this.vocab.allNames.add(name);
+                    this.vocab.map.set(name, 'industrial');
+                }
+                if (area.governorate) {
+                    const gov = area.governorate.toLowerCase().trim();
+                    this.vocab.allNames.add(gov);
+                }
+            });
+        }
+
+        // 2. قراءة أسماء الأنشطة والكلمات المفتاحية
+        if (this.db.activities) {
+            this.db.activities.forEach(act => {
+                if (act.text) {
+                    const text = act.text.toLowerCase().trim();
+                    this.vocab.allNames.add(text);
+                    this.vocab.map.set(text, 'activity');
+                }
+                // إضافة الكلمات المفتاحية للمعجم أيضاً
+                if (act.keywords) {
+                    act.keywords.forEach(key => this.vocab.allNames.add(key.toLowerCase().trim()));
+                }
+            });
+        }
+
+        console.log(`✅ تم بناء المعجم بنجاح: ${this.vocab.allNames.size} مسمى.`);
+    }
         // القواعد النصية الجديدة
         this.db = {
             activities: null,
@@ -1529,24 +1571,28 @@ ${metadata.text_preview || 'تفاصيل النشاط'}
     
     // ==================== دوال التوافق مع V13 ====================
     async showDetails(entityId, entityType, fallbackText = '') {
-        console.log(`🔍 عرض تفاصيل: ${entityId} (${entityType})`);
+        console.log("🔍 استدعاء تفاصيل الكيان:", entityId, "النوع:", entityType);
         
-        // 🔥 تحويل النوع ليتوافق مع القاعدة
-        const type = entityType === 'activity' ? 'activities' : entityType;
+        // توحيد مسمى النوع ليتوافق مع القواعد (مفرد/جمع)
+        const type = (entityType === 'activity') ? 'activities' : entityType;
         
-        const searchMeta = { text_preview: fallbackText };
+        const searchMeta = { text_preview: fallbackText || "" };
 
-        if (type === 'activities') {
-            const data = await this.enhancedFindActivityData(entityId, searchMeta);
-            if (data) return this.provideComprehensiveActivityInfo(data, 'تفاصيل', 1, {});
+        try {
+            if (type === 'activities') {
+                const data = await this.enhancedFindActivityData(entityId, searchMeta);
+                if (data) return this.provideComprehensiveActivityInfo(data, 'تفاصيل', 1, {});
+            }
+            
+            if (type === 'area' || type === 'industrial') {
+                const data = await this.enhancedFindAreaData(entityId, searchMeta);
+                if (data) return this.provideComprehensiveAreaInfo(data, 'تفاصيل', 1);
+            }
+        } catch (e) {
+            console.error("❌ فشل جلب التفاصيل في showDetails:", e);
         }
         
-        if (type === 'area' || type === 'industrial') {
-            const data = await this.enhancedFindAreaData(entityId, searchMeta);
-            if (data) return this.provideComprehensiveAreaInfo(data, 'تفاصيل', 1);
-        }
-        
-        return this.createResponse('عذراً، التفاصيل غير متوفرة حالياً.', 'error', 0);
+        return this.createResponse('عذراً، التفاصيل غير متوفرة حالياً لهذه الوحدة.', 'error', 0);
     }
 
 // ============================================================================
@@ -1802,12 +1848,13 @@ window.assistantV14 = {
 };
 
 // التوافق مع V13
+window.finalAssistantV14 = new IntelligentSmartAssistantV14();
 window.smartAssistant = window.finalAssistantV14;
-window.finalAssistant = window.finalAssistantV14; // للتوافق مع الإصدارات القديمة
 
 console.log('✅ Smart Assistant V14 - المساعد الذكي المحسن جاهز!');
 
 console.log('🔗 نظام الربط الذكي:', window.finalAssistantV14.linkingEnabled ? 'مفعل' : 'معطل');
+
 
 
 
