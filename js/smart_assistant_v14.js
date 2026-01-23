@@ -1529,28 +1529,25 @@ ${metadata.text_preview || 'تفاصيل النشاط'}
     
     // ==================== دوال التوافق مع V13 ====================
     async showDetails(entityId, entityType, fallbackText = '') {
-        // نفس الدالة في V13
-        console.log(`🔍 عرض تفاصيل: ${entityId} (${entityType}) - النص: ${fallbackText}`);
+        console.log(`🔍 عرض تفاصيل: ${entityId} (${entityType})`);
+        
+        // 🔥 تحويل النوع ليتوافق مع القاعدة
+        const type = entityType === 'activity' ? 'activities' : entityType;
         
         const searchMeta = { text_preview: fallbackText };
 
-        if (entityType === 'activity') {
+        if (type === 'activities') {
             const data = await this.enhancedFindActivityData(entityId, searchMeta);
-            if (data) {
-                return this.provideComprehensiveActivityInfo(data, 'تفاصيل', 1, {});
-            }
+            if (data) return this.provideComprehensiveActivityInfo(data, 'تفاصيل', 1, {});
         }
         
-        if (entityType === 'area' || entityType === 'industrial') {
+        if (type === 'area' || type === 'industrial') {
             const data = await this.enhancedFindAreaData(entityId, searchMeta);
-            if (data) {
-                return this.provideComprehensiveAreaInfo(data, 'تفاصيل', 1);
-            }
+            if (data) return this.provideComprehensiveAreaInfo(data, 'تفاصيل', 1);
         }
         
-        return this.createResponse('عذراً، تفاصيل هذا العنصر غير متوفرة في قاعدة البيانات النصية.', 'error', 0);
+        return this.createResponse('عذراً، التفاصيل غير متوفرة حالياً.', 'error', 0);
     }
-}
 
 // ============================================================================
 // ربط النموذج مع دوال V13 الخارجية (مهم للتوافق)
@@ -1811,6 +1808,7 @@ window.finalAssistant = window.finalAssistantV14; // للتوافق مع الإ�
 console.log('✅ Smart Assistant V14 - المساعد الذكي المحسن جاهز!');
 
 console.log('🔗 نظام الربط الذكي:', window.finalAssistantV14.linkingEnabled ? 'مفعل' : 'معطل');
+
 
 
 
