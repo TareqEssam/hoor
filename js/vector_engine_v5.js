@@ -2507,7 +2507,19 @@ class IntelligentVectorEngineV5 {
         const denom = Math.sqrt(normA) * Math.sqrt(normB);
         return denom === 0 ? 0 : dot / denom;
     }
-    
+
+        // 🔥 الجديد: التحقق من جاهزية محرك الربط
+    isDataLinkerReady() {
+        if (!this.dataLinker) return false;
+        
+        try {
+            // التحقق من وجود دالة أساسية للتأكد من التهيئة
+            return typeof this.dataLinker.link === 'function' && 
+                   this.dataLinker.isReady !== false;
+        } catch (e) {
+            return false;
+        }
+    }
     // للتوافق مع الكود القديم
     async search(query, limit = 10) {
         return this.intelligentSearch(query, { limit });
@@ -2580,4 +2592,5 @@ window.vectorEngine = {
 
 console.log('✅ Vector Engine V5 - المحرك الدلالي الذكي المتطور جاهز!');
 console.log('🚀 ميزات V5: بحث متعدد المستويات + ذكاء اصطناعي + ربط ذكي + أداء فائق');
+
 
