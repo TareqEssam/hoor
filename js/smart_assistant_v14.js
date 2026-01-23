@@ -28,7 +28,7 @@ class IntelligentSmartAssistantV14 {
                 lastQuery: null,
                 lastResponse: null,
                 linkingContext: new Map(),
-                vocab: null // سيتم ملؤه لاحقاً
+                vocab: null
             },
             preferences: {
                 languageLevel: 'formal',
@@ -44,27 +44,65 @@ class IntelligentSmartAssistantV14 {
         this.linkingEnabled = true;
         
         // 3. الإحصائيات ونظام التعلم
-        this.stats = { total: 0, successful: 0, linking: { totalAttempts: 0, successfulLinks: 0 } };
+        this.stats = { 
+            total: 0, 
+            successful: 0, 
+            linking: { 
+                totalAttempts: 0, 
+                successfulLinks: 0, 
+                averageConfidence: 0,
+                cacheHits: 0,
+                strategiesUsed: new Map()
+            },
+            ambiguous: 0
+        };
         this.confirmationSettings = { similarityThreshold: 0.1, maxAlternatives: 3, minLinkingConfidence: 0.4 };
-        this.learning = { queryPatterns: new Map(), successfulLinks: new Map() };
+        this.learning = { 
+            queryPatterns: new Map(), 
+            successfulLinks: new Map(),
+            userCorrections: new Map()
+        };
         
         this.init();
-    } // 👈 نهاية الـ constructor (تأكد من وجود هذا القوس)
+    }
 
     // ==================== الدوال الأساسية ====================
 
     async init() {
-        console.log('🚀 Smart Assistant V14 - البدء...');
+        console.log('🚀 Smart Assistant V14 - التهيئة المتقدمة...');
+        
+        // تحميل القواعد النصية الجديدة
         this.loadTextDatabases();
         
-        // تفعيل المعجم فوراً بعد تحميل البيانات
+        // انتظار تحميل جميع قواعد البيانات
+        await this.waitForDatabases();
+        
+        // بناء المعجم الديناميكي
         this.buildGeniusVocab();
         
+        // تهيئة ذاكرة المحادثة
         this.restoreConversation();
+        
+        // تهيئة محرك الربط الذكي (إذا كان متاحاً)
         await this.initializeDataLinker();
         
-        if (window.vEngine) window.vEngine.init();
-        console.log('✅ المساعد V14 جاهز والمعجم مفعّل');
+        // تهيئة نظام التعلم
+        this.initializeLearningSystem();
+        
+        // انتظار تهيئة محرك المتجهات
+        if (window.vEngine) {
+            await window.vEngine.init();
+            
+            // مشاركة محرك الربط مع vEngine إذا كان مهيأ
+            if (this.dataLinker && window.vEngine.setDataLinker) {
+                window.vEngine.setDataLinker(this.dataLinker);
+            }
+        }
+        
+        console.log('✅ المساعد V14 جاهز للعمل');
+        if (this.dataLinker) {
+            console.log('🔗 محرك الربط الذكي نشط');
+        }
     }
 
     buildGeniusVocab() {
@@ -85,62 +123,26 @@ class IntelligentSmartAssistantV14 {
             });
         }
     }
-        // ... باقي الكود كما هو (من السطر 90 فصاعداً)
 
-    // ==================== التهيئة المحسنة ====================
-    async init() {
-    console.log('🚀 Smart Assistant V14 - التهيئة المتقدمة...');
-    
-    // تحميل القواعد النصية الجديدة
-    this.loadTextDatabases();
-    
-    // انتظار تحميل جميع قواعد البيانات
-    await this.waitForDatabases();
-    
-    // تهيئة ذاكرة المحادثة
-    this.restoreConversation();
-    
-    // تهيئة محرك الربط الذكي (إذا كان متاحاً)
-    await this.initializeDataLinker();
-    
-    // تهيئة نظام التعلم
-    this.initializeLearningSystem();
-    
-    // انتظار تهيئة محرك المتجهات
-    if (window.vEngine) {
-        await window.vEngine.init();
-        
-        // مشاركة محرك الربط مع vEngine إذا كان مهيأ
-        if (this.dataLinker && window.vEngine.setDataLinker) {
-            window.vEngine.setDataLinker(this.dataLinker);
-        }
+    // إضافة دالة جديدة للانتظار
+    async waitForDatabases() {
+        return new Promise((resolve) => {
+            const checkInterval = setInterval(() => {
+                if (this.db.activities && this.db.industrial && this.db.decision104) {
+                    console.log("📚 تم تحميل قواعد البيانات النصية بنجاح");
+                    clearInterval(checkInterval);
+                    resolve();
+                }
+            }, 100);
+        });
     }
-    
-    console.log('✅ المساعد V14 جاهز للعمل');
-    if (this.dataLinker) {
-        console.log('🔗 محرك الربط الذكي نشط');
+
+    // إضافة دالة لمشاركة محرك الربط
+    setDataLinker(linker) {
+        this.dataLinker = linker;
+        this.linkingEnabled = true;
+        console.log('🔗 تم مشاركة محرك الربط مع V14');
     }
-}
-
-// إضافة دالة جديدة للانتظار
-async waitForDatabases() {
-    return new Promise((resolve) => {
-        const checkInterval = setInterval(() => {
-            if (this.db.activities && this.db.industrial && this.db.decision104) {
-                console.log("📚 تم تحميل قواعد البيانات النصية بنجاح");
-                clearInterval(checkInterval);
-                resolve();
-            }
-        }, 100);
-    });
-}
-
-// إضافة دالة لمشاركة محرك الربط
-setDataLinker(linker) {
-    this.dataLinker = linker;
-    this.linkingEnabled = true;
-    console.log('🔗 تم مشاركة محرك الربط مع V14');
-}
     
     // ==================== تهيئة محرك الربط الذكي ====================
     async initializeDataLinker() {
@@ -278,6 +280,7 @@ setDataLinker(linker) {
     // ==================== نظام الربط الذكي المحسن ====================
     async enhancedFindActivityData(id, metadata) {
         if (!this.db.activities) return null;
+        
         // 🛡️ فحص أمان إضافي
         if (!(this.memory.context.linkingContext instanceof Map)) {
             console.warn("🔄 إعادة تهيئة linkingContext كـ Map");
@@ -418,43 +421,43 @@ setDataLinker(linker) {
         return found;
     }
 
-  traditionalFindAreaData(id, metadata) {
-    if (!this.db.industrial) return null;
-    
-    let found = this.db.industrial.find(a => a.value == id);
-    
-    if (!found && metadata?.original_data?.id) {
-        found = this.db.industrial.find(a => a.value == metadata.original_data.id);
-    }
-    
-    if (!found && metadata?.text_preview) {
-        const searchText = metadata.text_preview.split(' ').slice(0, 3).join(' ');
+    traditionalFindAreaData(id, metadata) {
+        if (!this.db.industrial) return null;
         
-        const candidates = this.db.industrial
-            .map(area => {
-                const areaText = area.name || '';
-                let score = 0;
-                
-                if (areaText.includes(searchText)) score += 3;
-                if (metadata.text_preview.includes(areaText.substring(0, 20))) score += 2;
-                
-                const searchWords = searchText.split(' ');
-                searchWords.forEach(word => {
-                    if (areaText.includes(word)) score += 1;
-                });
-                
-                return { area, score };
-            })
-            .filter(item => item.score > 0)
-            .sort((a, b) => b.score - a.score);
+        let found = this.db.industrial.find(a => a.value == id);
         
-        if (candidates.length > 0) {
-            found = candidates[0].area;
+        if (!found && metadata?.original_data?.id) {
+            found = this.db.industrial.find(a => a.value == metadata.original_data.id);
         }
+        
+        if (!found && metadata?.text_preview) {
+            const searchText = metadata.text_preview.split(' ').slice(0, 3).join(' ');
+            
+            const candidates = this.db.industrial
+                .map(area => {
+                    const areaText = area.name || '';
+                    let score = 0;
+                    
+                    if (areaText.includes(searchText)) score += 3;
+                    if (metadata.text_preview.includes(areaText.substring(0, 20))) score += 2;
+                    
+                    const searchWords = searchText.split(' ');
+                    searchWords.forEach(word => {
+                        if (areaText.includes(word)) score += 1;
+                    });
+                    
+                    return { area, score };
+                })
+                .filter(item => item.score > 0)
+                .sort((a, b) => b.score - a.score);
+            
+            if (candidates.length > 0) {
+                found = candidates[0].area;
+            }
+        }
+        
+        return found;
     }
-    
-    return found;
-}
     
     // ==================== نظام التعلم من الربط ====================
     learnFromSuccessfulLink(vectorResult, fullData, confidence) {
@@ -734,7 +737,7 @@ setDataLinker(linker) {
                 totalAttempts: this.stats.linking.totalAttempts,
                 successfulLinks: this.stats.linking.successfulLinks,
                 successRate: `${successRate}%`,
-                averageConfidence: this.stats.linking.averageConfidence.toFixed(3),
+                averageConfidence: this.stats.linking.averageConfidence ? this.stats.linking.averageConfidence.toFixed(3) : 0,
                 cacheHits: this.stats.linking.cacheHits,
                 strategies: Object.fromEntries(this.stats.linking.strategiesUsed)
             },
@@ -957,7 +960,6 @@ setDataLinker(linker) {
         
         return entities;
     }
-
     
     // ==================== دوال الربط الذكي الجديدة ====================
     
@@ -1554,6 +1556,77 @@ ${metadata.text_preview || 'تفاصيل النشاط'}
         
         return this.createResponse('عذراً، التفاصيل غير متوفرة حالياً لهذه الوحدة.', 'error', 0);
     }
+
+    // ==================== دالة قائمة المناطق ====================
+    handleAreaList(query) {
+        if (!this.db.industrial) {
+            return this.createResponse('قاعدة المناطق غير متوفرة', 'error', 0);
+        }
+        
+        const text = query.toLowerCase();
+        let filtered = [...this.db.industrial];
+        
+        // فلترة حسب المحافظة إذا ذكرت
+        const govMatch = text.match(/(القاهرة|الإسكندرية|الجيزة|القليوبية|الشرقية|الدقهلية)/);
+        if (govMatch) {
+            const gov = govMatch[1];
+            filtered = filtered.filter(a => 
+                a.governorate && a.governorate.includes(gov)
+            );
+        }
+        
+        if (filtered.length === 0) {
+            return this.createResponse('لم أجد مناطق مطابقة', 'no_results', 0.3);
+        }
+        
+        let responseText = `📋 **قائمة المناطق الصناعية**\n\n`;
+        responseText += `**إجمالي المناطق:** ${filtered.length} منطقة\n\n`;
+        
+        // عرض أول 10 مناطق
+        filtered.slice(0, 10).forEach((area, index) => {
+            responseText += `${index + 1}. **${area.name}** - ${area.governorate || 'غير محدد'}\n`;
+        });
+        
+        if (filtered.length > 10) {
+            responseText += `\n... و${filtered.length - 10} منطقة أخرى`;
+        }
+        
+        responseText += `\n\n💡 اسأل عن منطقة محددة لمزيد من التفاصيل`;
+        
+        return this.createResponse(responseText, 'area_list', 1, {
+            areas: filtered,
+            total: filtered.length
+        });
+    }
+    
+    // ==================== دالة جهات الولاية ====================
+    handleAreaDependencies() {
+        const dependencies = {
+            'الهيئة العامة للتنمية الصناعية': ['العاشر من رمضان', 'السادات', 'برج العرب', 'بدر'],
+            'جهاز تنمية مدينة السادس من أكتوبر': ['السادس من أكتوبر'],
+            'جهاز تنمية مدينة العبور': ['العبور'],
+            'الجهات المحلية بالمحافظات': ['المناطق التابعة للمحافظات']
+        };
+        
+        let text = `🏛️ **جهات الولاية للمناطق الصناعية**\n\n`;
+        text += `${'═'.repeat(50)}\n\n`;
+        
+        for (const [dept, areas] of Object.entries(dependencies)) {
+            text += `**${dept}:**\n`;
+            areas.forEach(area => {
+                text += `  • ${area}\n`;
+            });
+            text += `\n`;
+        }
+        
+        text += `${'═'.repeat(50)}\n`;
+        text += `💡 للمزيد من التفاصيل: https://www.gafi.gov.eg`;
+        
+        return this.createResponse(text, 'dependencies', 1, {
+            dependencies: dependencies
+        });
+    }
+}
 
 // ============================================================================
 // الجزء المصلح: ربط النموذج مع الدوال المساعدة (V14 مدمج)
