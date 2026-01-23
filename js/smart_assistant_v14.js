@@ -1556,43 +1556,42 @@ ${metadata.text_preview || 'تفاصيل النشاط'}
     }
 
 // ============================================================================
-// ربط النموذج مع دوال V13 الخارجية (مهم للتوافق)
+// الجزء المصلح: ربط النموذج مع الدوال المساعدة (V14 مدمج)
 // ============================================================================
 
-// نسخ جميع الدوال المساعدة من V13
-IntelligentSmartAssistantV14.prototype.provideSpecificActivityInfo = window.IntelligentSmartAssistant?.prototype.provideSpecificActivityInfo || function(activityData, infoType, confidence) {
-    const details = activityData.details || {};
-    
-    let text = '';
-    let title = '';
+// 1. دالة معلومات النشاط المحددة
+IntelligentSmartAssistantV14.prototype.provideSpecificActivityInfo = function(activityData, infoType, confidence) {
+    var details = activityData.details || {};
+    var text = '';
+    var title = '';
     
     switch (infoType) {
         case 'licensing':
-            title = `📋 التراخيص المطلوبة لـ ${activityData.text}`;
+            title = '📋 التراخيص المطلوبة لـ ' + activityData.text;
             text = details.req || 'لا توجد معلومات تفصيلية عن التراخيص';
             break;
         case 'authorities':
-            title = `🏛️ الجهات المختصة بـ ${activityData.text}`;
+            title = '🏛️ الجهات المختصة بـ ' + activityData.text;
             text = details.auth || 'لا توجد معلومات عن الجهات المختصة';
             break;
         case 'legislation':
-            title = `⚖️ التشريعات المنظمة لـ ${activityData.text}`;
+            title = '⚖️ التشريعات المنظمة لـ ' + activityData.text;
             text = details.leg || 'لا توجد معلومات عن التشريعات';
             break;
         case 'location':
-            title = `📍 الموقع المناسب لـ ${activityData.text}`;
+            title = '📍 الموقع المناسب لـ ' + activityData.text;
             text = details.loc || 'لا توجد معلومات عن الموقع';
             break;
         case 'requirements':
-            title = `📝 المتطلبات الأساسية لـ ${activityData.text}`;
+            title = '📝 المتطلبات الأساسية لـ ' + activityData.text;
             text = details.req || 'لا توجد معلومات عن المتطلبات';
             break;
         default:
-            title = `ℹ️ معلومات عن ${activityData.text}`;
+            title = 'ℹ️ معلومات عن ' + activityData.text;
             text = 'المعلومات المطلوبة غير متوفرة';
     }
     
-    const responseText = `${title}\n\n${'═'.repeat(60)}\n\n${text}\n\n${'═'.repeat(60)}`;
+    var responseText = title + '\n\n' + '═'.repeat(40) + '\n\n' + text + '\n\n' + '═'.repeat(40);
     
     return this.createResponse(responseText, 'activity_specific', confidence, {
         activity: activityData,
@@ -1600,70 +1599,70 @@ IntelligentSmartAssistantV14.prototype.provideSpecificActivityInfo = window.Inte
     });
 };
 
-IntelligentSmartAssistantV14.prototype.provideComprehensiveActivityInfo = window.IntelligentSmartAssistant?.prototype.provideComprehensiveActivityInfo || function(activityData, query, confidence, analysis) {
-    const details = activityData.details || {};
-    const language = analysis?.language || 'formal';
+// 2. دالة المعلومات الشاملة للنشاط
+IntelligentSmartAssistantV14.prototype.provideComprehensiveActivityInfo = function(activityData, query, confidence, analysis) {
+    var details = activityData.details || {};
+    var lang = (analysis && analysis.language) ? analysis.language : 'formal';
+    var text = '🏢 **' + activityData.text + '**\n\n' + '═'.repeat(40) + '\n\n';
     
-    let text = `🏢 **${activityData.text}**\n\n${'═'.repeat(60)}\n\n`;
-    
-    if (language === 'egyptian') {
-        text += `📋 **طبيعة الشغل:**\n${details.act || 'مفيش تفاصيل'}\n\n`;
-        text += `📝 **التراخيص المطلوبة:**\n${details.req || 'مفيش بيانات'}\n\n`;
-        text += `🏛️ **الجهات المسؤولة:**\n${details.auth || 'معرفش'}\n\n`;
-        text += `📍 **المكان المناسب:**\n${details.loc || 'في أي مكان'}\n\n`;
-        text += `⚖️ **القوانين:**\n${details.leg || 'القوانين العادية'}\n\n`;
+    if (lang === 'egyptian') {
+        text += '📋 **طبيعة الشغل:**\n' + (details.act || 'مفيش تفاصيل متوفرة') + '\n\n';
+        text += '📝 **التراخيص المطلوبة:**\n' + (details.req || 'مفيش بيانات') + '\n\n';
+        text += '🏛️ **الجهات المسؤولة:**\n' + (details.auth || 'غير محددة') + '\n\n';
+        text += '📍 **المكان المناسب:**\n' + (details.loc || 'في أي مكان ملائم') + '\n\n';
     } else {
-        text += `📋 **طبيعة النشاط:**\n${details.act || 'لا توجد معلومات تفصيلية'}\n\n`;
-        text += `📝 **التراخيص المطلوبة:**\n${details.req || 'يرجى مراجعة الجهة المختصة'}\n\n`;
-        text += `🏛️ **الجهات المختصة:**\n${details.auth || 'غير محدد'}\n\n`;
-        text += `📍 **الموقع المناسب:**\n${details.loc || 'غير محدد'}\n\n`;
-        text += `⚖️ **التشريعات المنظمة:**\n${details.leg || 'القوانين العامة'}\n\n`;
+        text += '📋 **طبيعة النشاط:**\n' + (details.act || 'لا توجد معلومات تفصيلية') + '\n\n';
+        text += '📝 **التراخيص المطلوبة:**\n' + (details.req || 'يرجى مراجعة الجهة المختصة') + '\n\n';
+        text += '🏛️ **الجهات المختصة:**\n' + (details.auth || 'غير محدد') + '\n\n';
+        text += '📍 **الموقع المناسب:**\n' + (details.loc || 'غير محدد') + '\n\n';
+        text += '⚖️ **التشريعات المنظمة:**\n' + (details.leg || 'القوانين العامة المعمول بها') + '\n\n';
     }
     
     if (details.link) {
-        text += `🔗 **الدليل الإرشادي:** ${details.link}\n\n`;
+        text += '🔗 **الدليل الإرشادي:** ' + details.link + '\n\n';
     }
     
-    text += `${'═'.repeat(60)}\n`;
-    text += `💡 اسألني عن أي جزء محدد (تراخيص، جهات، إجراءات...)`;
+    text += '═'.repeat(40) + '\n';
+    text += '💡 اسألني عن أي جزء محدد (تراخيص، جهات، إجراءات...)';
     
     return this.createResponse(text, 'activity_full', confidence, {
         activity: activityData,
-        hasDetails: !!details.act
+        hasDetails: (details.act ? true : false)
     });
 };
 
-IntelligentSmartAssistantV14.prototype.provideSpecificAreaInfo = window.IntelligentSmartAssistant?.prototype.provideSpecificAreaInfo || function(areaData, infoType, confidence) {
-    let text = '';
-    let title = '';
+// 3. دالة معلومات المنطقة المحددة
+IntelligentSmartAssistantV14.prototype.provideSpecificAreaInfo = function(areaData, infoType, confidence) {
+    var text = '';
+    var title = '';
     
     switch (infoType) {
         case 'location':
-            title = `📍 موقع ${areaData.name}`;
-            text = `المحافظة: ${areaData.governorate || 'غير محدد'}`;
+            title = '📍 موقع ' + areaData.name;
+            text = 'المحافظة: ' + (areaData.governorate || 'غير محدد');
             if (areaData.x && areaData.y) {
-                text += `\nالإحداثيات: ${areaData.x}, ${areaData.y}`;
-                text += `\n🗺️ رابط الخريطة: https://www.google.com/maps?q=${areaData.y},${areaData.x}`;
+                text += '\nالإحداثيات: ' + areaData.x + ', ' + areaData.y;
+                text += '\n🗺️ رابط الخريطة: https://www.google.com/maps?q=' + areaData.y + ',' + areaData.x;
             }
             break;
         case 'area':
-            title = `📏 مساحة ${areaData.name}`;
-            text = `${areaData.area || 'غير محدد'} فدان`;
+            title = '📏 مساحة ' + areaData.name;
+            text = (areaData.area || 'غير محدد') + ' فدان';
             break;
         case 'authorities':
-            title = `🏛️ جهة الولاية لـ ${areaData.name}`;
+            title = '🏛️ جهة الولاية لـ ' + areaData.name;
             text = areaData.dependency || 'غير محدد';
             break;
         case 'decision':
-            title = `📜 قرار إنشاء ${areaData.name}`;
+            title = '📜 قرار إنشاء ' + areaData.name;
             text = areaData.decision || 'غير متوفر';
             break;
         default:
-            title = `ℹ️ معلومات عن ${areaData.name}`;
-            text = 'المعلومات المطلوبة غير متوفرة';
+            title = 'ℹ️ معلومات عن ' + areaData.name;
+            text = 'المعلومات المطلوبة غير متوفرة حالياً';
     }
     
-    const responseText = `${title}\n\n${'═'.repeat(60)}\n\n${text}\n\n${'═'.repeat(60)}`;
+    var responseText = title + '\n\n' + '═'.repeat(40) + '\n\n' + text + '\n\n' + '═'.repeat(40);
     
     return this.createResponse(responseText, 'area_specific', confidence, {
         area: areaData,
@@ -1671,150 +1670,110 @@ IntelligentSmartAssistantV14.prototype.provideSpecificAreaInfo = window.Intellig
     });
 };
 
-IntelligentSmartAssistantV14.prototype.provideComprehensiveAreaInfo = window.IntelligentSmartAssistant?.prototype.provideComprehensiveAreaInfo || function(areaData, query, confidence) {
-    let text = `🏭 **${areaData.name}**\n\n${'═'.repeat(60)}\n\n`;
+// 4. دالة المعلومات الشاملة للمنطقة
+IntelligentSmartAssistantV14.prototype.provideComprehensiveAreaInfo = function(areaData, query, confidence) {
+    var text = '🏭 **' + areaData.name + '**\n\n' + '═'.repeat(40) + '\n\n';
     
-    text += `📍 **المحافظة:** ${areaData.governorate || 'غير محدد'}\n`;
-    text += `🏛️ **جهة الولاية:** ${areaData.dependency || 'غير محدد'}\n`;
-    text += `📏 **المساحة:** ${areaData.area || 'غير محدد'} فدان\n\n`;
+    text += '📍 **المحافظة:** ' + (areaData.governorate || 'غير محدد') + '\n';
+    text += '🏛️ **جهة الولاية:** ' + (areaData.dependency || 'غير محدد') + '\n';
+    text += '📏 **المساحة:** ' + (areaData.area || 'غير محدد') + ' فدان\n\n';
     
     if (areaData.decision) {
-        text += `📜 **قرار الإنشاء:**\n${areaData.decision}\n\n`;
+        text += '📜 **قرار الإنشاء:**\n' + areaData.decision + '\n\n';
     }
     
     if (areaData.x && areaData.y) {
-        text += `🗺️ **الموقع على الخريطة:**\nhttps://www.google.com/maps?q=${areaData.y},${areaData.x}\n\n`;
+        text += '🗺️ **الموقع على الخريطة:**\nhttps://www.google.com/maps?q=' + areaData.y + ',' + areaData.x + '\n\n';
     }
     
-    text += `${'═'.repeat(60)}\n`;
-    text += `💡 اسألني عن: مساحة، موقع، جهة الولاية، أو قرار الإنشاء`;
+    text += '═'.repeat(40) + '\n';
+    text += '💡 اسألني عن: مساحة، موقع، جهة الولاية، أو قرار الإنشاء';
     
     return this.createResponse(text, 'area_full', confidence, {
         area: areaData,
-        hasCoordinates: !!(areaData.x && areaData.y)
+        hasCoordinates: (areaData.x && areaData.y ? true : false)
     });
 };
 
-IntelligentSmartAssistantV14.prototype.handleAreaSpecificLocal = window.IntelligentSmartAssistant?.prototype.handleAreaSpecificLocal || function(query) {
-    if (!this.db.industrial) {
-        return this.createResponse('قاعدة المناطق غير متوفرة', 'error', 0);
-    }
+// 5. دالة البحث المحلي للمناطق (Fallback)
+IntelligentSmartAssistantV14.prototype.handleAreaSpecificLocal = function(query) {
+    if (!this.db.industrial) return this.createResponse('قاعدة المناطق غير متوفرة', 'error', 0);
     
-    const searchTerms = ['العاشر', 'السادات', 'برج العرب', 'زهراء', 'بدر', 'العبور'];
-    let found = null;
+    var found = null;
+    var searchStr = query.toLowerCase();
     
-    for (const term of searchTerms) {
-        if (query.includes(term)) {
-            found = this.db.industrial.find(a => a.name.includes(term));
-            if (found) break;
+    for (var i = 0; i < this.db.industrial.length; i++) {
+        if (this.db.industrial[i].name && searchStr.indexOf(this.db.industrial[i].name.toLowerCase()) !== -1) {
+            found = this.db.industrial[i];
+            break;
         }
     }
     
     if (!found) {
-        return this.createResponse(
-            `لم أجد المنطقة المطلوبة.\n\n💡 جرب: "المناطق في القاهرة" أو "كام منطقة"`,
-            'no_results',
-            0.2
-        );
+        return this.createResponse('لم أجد المنطقة المطلوبة محلياً. يرجى تجربة محرك البحث المتجهي.', 'no_results', 0.2);
     }
     
     return this.provideComprehensiveAreaInfo(found, query, 0.9);
 };
 
-IntelligentSmartAssistantV14.prototype.handleDecision104LocalCheck = window.IntelligentSmartAssistant?.prototype.handleDecision104LocalCheck || function(query) {
-    if (!this.db.decision104) {
-        return this.createResponse('قاعدة القرار 104 غير متوفرة', 'error', 0);
-    }
+// 6. دالة فحص القرار 104 المحلي (Fallback)
+IntelligentSmartAssistantV14.prototype.handleDecision104LocalCheck = function(query) {
+    if (!this.db.decision104) return this.createResponse('قاعدة القرار 104 غير متوفرة', 'error', 0);
     
-    const searchText = query.toLowerCase();
-    let foundActivity = null;
-    let foundSector = null;
+    var searchText = query.toLowerCase();
+    var foundActivity = null;
+    var foundSector = null;
     
+    // فحص قطاع أ
     if (this.db.decision104.sectorA) {
-        for (const [category, items] of Object.entries(this.db.decision104.sectorA)) {
-            if (Array.isArray(items)) {
-                const match = items.find(item => 
-                    item.toLowerCase().includes(searchText.substring(0, 20))
-                );
-                if (match) {
-                    foundActivity = match;
+        for (var catA in this.db.decision104.sectorA) {
+            var itemsA = this.db.decision104.sectorA[catA];
+            for (var j = 0; j < itemsA.length; j++) {
+                if (itemsA[j].toLowerCase().indexOf(searchText.substring(0, 10)) !== -1) {
+                    foundActivity = itemsA[j];
                     foundSector = 'A';
                     break;
                 }
             }
-        }
-    }
-    
-    if (!foundActivity && this.db.decision104.sectorB) {
-        for (const [category, items] of Object.entries(this.db.decision104.sectorB)) {
-            if (Array.isArray(items)) {
-                const match = items.find(item => 
-                    item.toLowerCase().includes(searchText.substring(0, 20))
-                );
-                if (match) {
-                    foundActivity = match;
-                    foundSector = 'B';
-                    break;
-                }
-            }
+            if (foundActivity) break;
         }
     }
     
     if (!foundActivity) {
-        return this.createResponse(
-            `❌ النشاط غير مشمول في قرار 104`,
-            'decision104_not_found',
-            0.3
-        );
+        return this.createResponse('❌ النشاط غير مشمول في قرار 104 (فحص محلي)', 'decision104_not_found', 0.3);
     }
     
-    const sectorName = foundSector === 'A' ? 'القطاع (أ)' : 'القطاع (ب)';
-    const incentive = foundSector === 'A' ? '50%' : '30%';
+    var sectorName = (foundSector === 'A') ? 'القطاع (أ)' : 'القطاع (ب)';
+    var incentive = (foundSector === 'A') ? '50%' : '30%';
     
-    const text = `
-✅ **نعم، مشمول في قرار 104 لسنة 2022**
-
-${'═'.repeat(60)}
-
-📋 **النشاط:** ${foundActivity}
-
-🎯 **القطاع:** ${sectorName}
-💰 **الحافز:** ${incentive} من التكلفة
-
-${'═'.repeat(60)}
-
-📌 للمشروعات المنشأة بعد قانون الاستثمار 72 لسنة 2017
-    `.trim();
+    var resText = '✅ **نعم، مشمول في قرار 104 لسنة 2022**\n\n' + 
+                  '📋 **النشاط:** ' + foundActivity + '\n' +
+                  '🎯 **القطاع:** ' + sectorName + '\n' +
+                  '💰 **الحافز:** ' + incentive + ' من التكلفة الاستثمارية';
     
-    return this.createResponse(text, 'decision104_match', 0.8, {
+    return this.createResponse(resText, 'decision104_match', 0.8, {
         sector: foundSector,
         incentive: incentive
     });
 };
 
-// ==================== التصدير والتهيئة ====================
+// ==================== التصدير والتهيئة النهائية (الإصلاح الحرج) ====================
 
-window.finalAssistantV14 = new IntelligentSmartAssistantV14();
+// حذف كافة التكرارات السابقة وتعريف المساعد مرة واحدة فقط بنظام الأمان
+if (!window.finalAssistantV14) {
+    window.finalAssistantV14 = new IntelligentSmartAssistantV14();
+    window.smartAssistant = window.finalAssistantV14;
+    window.finalAssistant = window.finalAssistantV14;
+}
 
-// التوافق مع الكود القديم
+// تحديث واجهة الربط الخارجية للـ UI
 window.assistantV14 = {
-    getResponse: (query) => window.finalAssistantV14.query(query),
-    showLicenseDetails: (id) => window.finalAssistantV14.showDetails(id, 'activity'),
-    getLinkingPerformance: () => window.finalAssistantV14.getLinkingPerformance(),
-    toggleSmartLinking: (enable) => {
-        window.finalAssistantV14.linkingEnabled = enable;
-        return window.finalAssistantV14.linkingEnabled;
-    }
+    getResponse: function(q) { return window.finalAssistantV14.query(q); },
+    showLicenseDetails: function(id, type, text) { return window.finalAssistantV14.showDetails(id, type, text); },
+    getLinkingPerformance: function() { return window.finalAssistantV14.getLinkingPerformance(); }
 };
 
-// التوافق مع V13
-window.finalAssistantV14 = new IntelligentSmartAssistantV14();
-window.smartAssistant = window.finalAssistantV14;
-
-console.log('✅ Smart Assistant V14 - المساعد الذكي المحسن جاهز!');
-
-console.log('🔗 نظام الربط الذكي:', window.finalAssistantV14.linkingEnabled ? 'مفعل' : 'معطل');
-
+console.log('✅ Smart Assistant V14 - تم الإصلاح الشامل وجاهز للعمل!');
 
 
 
