@@ -631,14 +631,22 @@ class DataLinkingEngine {
         let confidenceBoost = 0;
         
         // 1. إذا كان هناك سياق محادثة متطابق
-        if (context.conversationHistory) {
-        const convoText = context.conversationHistory.join(' ');
+        if (context && context.conversationHistory) {
+        let convoText = "";
+    
+       // معالجة سياق المحادثة سواء كان مصفوفة أو سلسلة نصية
+        if (Array.isArray(context.conversationHistory)) {
+        convoText = context.conversationHistory.join(' ');
+         } else if (typeof context.conversationHistory === 'string') {
+        convoText = context.conversationHistory;
+        }
+    
         const itemText = this.getItemText(linkedData.data);
     
-        if (convoText.includes(itemText.substring(0, 20))) {
+       if (convoText && itemText && convoText.includes(itemText.substring(0, 20))) {
         confidenceBoost += 0.15;
-       }
-      }
+           }
+        }
         
         // 2. إذا كان العنصر شائعاً (تم ربطه مسبقاً بنجاح)
         const fingerprint = linkedData.fingerprint;
@@ -783,6 +791,7 @@ window.DataLinkingEngine = DataLinkingEngine;
 
 
 console.log('✅ DataLinkingEngine V1.0 جاهز للتوسيع');
+
 
 
 
