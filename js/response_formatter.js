@@ -759,6 +759,73 @@ class ResponseFormatterV3 {
             </div>
         `;
     }
+
+    // ==================== [إضافة: دوال بناء الكروت المفقودة] ====================
+    createActivityDetails(details) {
+        let html = '<div class="activity-details-list" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">';
+        
+        const rows = [
+            { label: '🏛️ الجهة:', value: details.auth },
+            { label: '📄 التراخيص:', value: details.req },
+            { label: '📍 الموقع:', value: details.loc },
+            { label: '⚖️ التشريع:', value: details.leg }
+        ];
+
+        rows.forEach(row => {
+            if (row.value) {
+                html += `
+                    <div class="detail-row" style="margin-bottom: 8px; font-size: 0.85rem;">
+                        <strong style="color: #666;">${row.label}</strong>
+                        <div style="color: #333; margin-top: 2px; padding-right: 10px;">${row.value}</div>
+                    </div>`;
+            }
+        });
+
+        html += '</div>';
+        return html;
+    }
+
+    createAreaHeader(area, confidence) {
+        return `
+            <div class="area-header" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="background: #e8f5e9; color: #2e7d32; width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">📍</div>
+                <div style="flex: 1;">
+                    <h3 style="margin: 0; font-size: 1.1rem; color: #1b5e20;">${area?.name || 'منطقة غير محددة'}</h3>
+                    <small style="color: #666;">${area?.governorate || ''}</small>
+                </div>
+            </div>`;
+    }
+
+    createActivityHeader(activity, confidence) {
+        return `
+            <div class="activity-header" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="background: #e3f2fd; color: #0d47a1; width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">🏢</div>
+                <div style="flex: 1;">
+                    <h3 style="margin: 0; font-size: 1.1rem; color: #0d47a1;">${activity?.text || 'نشاط غير محدد'}</h3>
+                    <small style="color: #666;">${activity?.details?.category || 'تصنيف عام'}</small>
+                </div>
+            </div>`;
+    }
+
+    createSmartActionButtons(activity, response) {
+        // تم دمجها سابقاً، نضعها هنا للتأكيد
+        return `
+            <div class="smart-actions" style="display: flex; gap: 8px; margin-top: 15px; border-top: 1px solid #eee; padding-top: 12px;">
+                <button class="btn-sm" style="background: #0d6efd; color: white; border: none; padding: 5px 12px; border-radius: 5px; font-size: 0.8rem; cursor: pointer;" onclick="window.assistantUI.sendMessage('ما هي ميزات ${activity.text} في قرار 104؟')">⭐ حوافز 104</button>
+                <button class="btn-sm" style="background: #f8f9fa; color: #333; border: 1px solid #ccc; padding: 5px 12px; border-radius: 5px; font-size: 0.8rem; cursor: pointer;" onclick="window.assistantUI.sendMessage('الموقع المناسب لـ ${activity.text}')">📍 الموقع</button>
+            </div>`;
+    }
+
+    createMapButton(x, y, name) {
+        const url = `https://www.google.com/maps?q=${y},${x}`;
+        return `
+            <div style="margin-top: 15px;">
+                <a href="${url}" target="_blank" style="display: block; text-align: center; background: #28a745; color: white; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 0.9rem;">
+                    🌍 فتح موقع ${name} على الخريطة
+                </a>
+            </div>`;
+    }
+    // ==================== [نهاية الإضافة] ====================
     
     formatEnhancedText(text) {
         if (!text) return '';
@@ -948,5 +1015,6 @@ class ResponseFormatterV3 {
 // ==================== التصدير والتهيئة ====================
 window.ResponseFormatterV3 = ResponseFormatterV3;
 window.ResponseFormatter = ResponseFormatterV3; // للتوافق
+
 
 console.log('✅ Response Formatter V3 جاهز للربط الذكي');
