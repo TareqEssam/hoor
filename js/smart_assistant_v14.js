@@ -87,36 +87,58 @@ class IntelligentSmartAssistantV14 {
     
     // ==================== التهيئة المحسنة ====================
     async init() {
-        console.log('🚀 Smart Assistant V14 - التهيئة المتقدمة...');
+    console.log('🚀 Smart Assistant V14 - التهيئة المتقدمة...');
+    
+    // تحميل القواعد النصية الجديدة
+    this.loadTextDatabases();
+    
+    // انتظار تحميل جميع قواعد البيانات
+    await this.waitForDatabases();
+    
+    // تهيئة ذاكرة المحادثة
+    this.restoreConversation();
+    
+    // تهيئة محرك الربط الذكي (إذا كان متاحاً)
+    await this.initializeDataLinker();
+    
+    // تهيئة نظام التعلم
+    this.initializeLearningSystem();
+    
+    // انتظار تهيئة محرك المتجهات
+    if (window.vEngine) {
+        await window.vEngine.init();
         
-        // تحميل القواعد النصية الجديدة
-        this.loadTextDatabases();
-
-        // استبدل السطور من 94-98 بهذا الكود:
-        if (this.db.activities && this.db.industrial) {
-        // تمت إزالة buildGeniusVocab() لأنها غير معرفة
-        console.log("📚 تم تحميل قواعد البيانات النصية بنجاح");
-        }
-        
-        // تهيئة ذاكرة المحادثة
-        this.restoreConversation();
-        
-        // تهيئة محرك الربط الذكي (إذا كان متاحاً)
-        await this.initializeDataLinker();
-        
-        // تهيئة نظام التعلم
-        this.initializeLearningSystem();
-        
-        // انتظار تهيئة محرك المتجهات
-        if (window.vEngine) {
-            window.vEngine.init();
-        }
-        
-        console.log('✅ المساعد V14 جاهز للعمل');
-        if (this.dataLinker) {
-            console.log('🔗 محرك الربط الذكي نشط');
+        // مشاركة محرك الربط مع vEngine إذا كان مهيأ
+        if (this.dataLinker && window.vEngine.setDataLinker) {
+            window.vEngine.setDataLinker(this.dataLinker);
         }
     }
+    
+    console.log('✅ المساعد V14 جاهز للعمل');
+    if (this.dataLinker) {
+        console.log('🔗 محرك الربط الذكي نشط');
+    }
+}
+
+// إضافة دالة جديدة للانتظار
+async waitForDatabases() {
+    return new Promise((resolve) => {
+        const checkInterval = setInterval(() => {
+            if (this.db.activities && this.db.industrial && this.db.decision104) {
+                console.log("📚 تم تحميل قواعد البيانات النصية بنجاح");
+                clearInterval(checkInterval);
+                resolve();
+            }
+        }, 100);
+    });
+}
+
+// إضافة دالة لمشاركة محرك الربط
+setDataLinker(linker) {
+    this.dataLinker = linker;
+    this.linkingEnabled = true;
+    console.log('🔗 تم مشاركة محرك الربط مع V14');
+}
     
     // ==================== تهيئة محرك الربط الذكي ====================
     async initializeDataLinker() {
@@ -388,6 +410,44 @@ class IntelligentSmartAssistantV14 {
         
         return found;
     }
+
+  traditionalFindAreaData(id, metadata) {
+    if (!this.db.industrial) return null;
+    
+    let found = this.db.industrial.find(a => a.value == id);
+    
+    if (!found && metadata?.original_data?.id) {
+        found = this.db.industrial.find(a => a.value == metadata.original_data.id);
+    }
+    
+    if (!found && metadata?.text_preview) {
+        const searchText = metadata.text_preview.split(' ').slice(0, 3).join(' ');
+        
+        const candidates = this.db.industrial
+            .map(area => {
+                const areaText = area.name || '';
+                let score = 0;
+                
+                if (areaText.includes(searchText)) score += 3;
+                if (metadata.text_preview.includes(areaText.substring(0, 20))) score += 2;
+                
+                const searchWords = searchText.split(' ');
+                searchWords.forEach(word => {
+                    if (areaText.includes(word)) score += 1;
+                });
+                
+                return { area, score };
+            })
+            .filter(item => item.score > 0)
+            .sort((a, b) => b.score - a.score);
+        
+        if (candidates.length > 0) {
+            found = candidates[0].area;
+        }
+    }
+    
+    return found;
+}
     
     // ==================== نظام التعلم من الربط ====================
     learnFromSuccessfulLink(vectorResult, fullData, confidence) {
@@ -1733,5 +1793,6 @@ window.finalAssistant = window.finalAssistantV14; // للتوافق مع الإ�
 console.log('✅ Smart Assistant V14 - المساعد الذكي المحسن جاهز!');
 
 console.log('🔗 نظام الربط الذكي:', window.finalAssistantV14.linkingEnabled ? 'مفعل' : 'معطل');
+
 
 
