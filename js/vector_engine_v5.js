@@ -611,33 +611,49 @@ class IntelligentVectorEngineV5 {
     
     // 🔥 الجديد: تهيئة الأنظمة الذكية
     async initializeSmartSystems() {
-        console.log("🧠 تهيئة الأنظمة الذكية...");
-        
-        // 1. تهيئة محلل النية
-        await this.intentAnalyzer.initialize();
-        
-        // 2. تهيئة نظام الملاحظات
-        await this.smartNotes.initialize();
-        
-        // 3. محاولة تهيئة محرك الربط الذكي
-        if (typeof DataLinkingEngine !== 'undefined') {
-            try {
-                this.dataLinker = new DataLinkingEngine();
-                console.log('🔗 محرك الربط الذكي متاح للاستخدام');
-            } catch (error) {
-                console.warn('⚠️ فشل تهيئة محرك الربط:', error);
-                this.linkingEnabled = false;
+    console.log("🧠 تهيئة الأنظمة الذكية...");
+    
+    // 1. تهيئة محلل النية
+    await this.intentAnalyzer.initialize();
+    
+    // 2. تهيئة نظام الملاحظات
+    await this.smartNotes.initialize();
+    
+    // 3. محاولة تهيئة محرك الربط الذكي
+    if (typeof DataLinkingEngine !== 'undefined') {
+        try {
+            console.log('🔗 جاري تهيئة DataLinkingEngine...');
+            
+            // تحميل البيانات من المساعد الذكي إذا كان متاحاً
+            let linkingData = {};
+            if (window.finalAssistantV14) {
+                const assistant = window.finalAssistantV14;
+                linkingData = {
+                    activities: assistant.db?.activities || [],
+                    industrial: assistant.db?.industrial || [],
+                    decision104: assistant.db?.decision104 || {}
+                };
             }
-        } else {
-            console.warn('⚠️ DataLinkingEngine غير متوفر');
+            
+            this.dataLinker = new DataLinkingEngine();
+            await this.dataLinker.initialize(linkingData);
+            
+            console.log('✅ محرك الربط الذكي جاهز للاستخدام');
+        } catch (error) {
+            console.warn('⚠️ فشل تهيئة محرك الربط:', error);
             this.linkingEnabled = false;
+            this.dataLinker = null;
         }
-        
-        // 4. تهيئة المراقبة
-        this.monitor.start();
-        
-        console.log("✅ الأنظمة الذكية جاهزة");
+    } else {
+        console.warn('⚠️ DataLinkingEngine غير متوفر');
+        this.linkingEnabled = false;
     }
+    
+    // 4. تهيئة المراقبة
+    this.monitor.start();
+    
+    console.log("✅ الأنظمة الذكية جاهزة");
+}
     
     // 🔥 الجديد: تحميل محسن لقواعد المتجهات
     async loadEnhancedVectorDatabases() {
@@ -1992,50 +2008,71 @@ class IntelligentVectorEngineV5 {
     }
     
     async enhanceItemsWithLinker(items, dbKey, query, queryAnalysis) {
-        const enhanced = [];
-        
-        for (const item of items) {
-            try {
-                const vectorResult = {
-                    id: item.id,
-                    metadata: item.metadata || {},
-                    text_preview: item.metadata?.text_preview || '',
-                    db_type: dbKey
-                };
-                
-                const linkedData = await this.dataLinker.link(
-                    vectorResult,
-                    dbKey === 'activities' ? 'activities' : 'industrial',
-                    {
-                        query: query,
-                        analysis: queryAnalysis,
-                        context: {
-                            searchScore: item.score,
-                            ranking: item.ranking
-                        }
-                    }
-                );
-                
-                if (linkedData && linkedData.data) {
-                    enhanced.push({
-                        id: item.id,
-                        smartLinked: true,
-                        linkedData: linkedData.data,
-                        linkingConfidence: linkedData.confidence,
-                        linkingMethod: linkedData.strategy,
-                        enhancedMetadata: {
-                            ...item.metadata,
-                            linkedInfo: linkedData.metadata
-                        }
-                    });
-                }
-            } catch (error) {
-                console.warn(`⚠️ فشل الربط الذكي للعنصر ${item.id}:`, error);
-            }
-        }
-        
+    const enhanced = [];
+    
+    // التحقق من جاهزية محرك الربط
+    if (!this.isDataLinkerReady()) {
+        console.warn('⚠️ محرك الربط الذكي غير جاهز - تخطي الربط');
         return enhanced;
     }
+    
+    for (const item of items) {
+        try {
+            // التحقق من وجود البيانات المطلوبة
+            if (!item.metadata?.text_preview) {
+                continue;
+            }
+            
+            const vectorResult = {
+                id: item.id,
+                metadata: item.metadata,
+                text_preview: item.metadata.text_preview,
+                db_type: dbKey
+            };
+            
+            // تحديد نوع الربط بناءً على قاعدة البيانات
+            const linkType = dbKey === 'activities' ? 'activities' : 
+                           dbKey === 'industrial' ? 'industrial' : 
+                           'decision104';
+            
+            // تنفيذ الربط مع التحقق من الأخطاء
+            const linkedData = await this.dataLinker.link(
+                vectorResult,
+                linkType,
+                {
+                    query: query,
+                    analysis: queryAnalysis,
+                    context: {
+                        searchScore: item.score,
+                        ranking: item.ranking || 0
+                    }
+                }
+            ).catch(error => {
+                console.warn(`⚠️ فشل الربط للعنصر ${item.id}:`, error.message);
+                return null;
+            });
+            
+            if (linkedData && linkedData.data) {
+                enhanced.push({
+                    id: item.id,
+                    smartLinked: true,
+                    linkedData: linkedData.data,
+                    linkingConfidence: linkedData.confidence || 0.5,
+                    linkingMethod: linkedData.strategy || 'default',
+                    enhancedMetadata: {
+                        ...item.metadata,
+                        linkedInfo: linkedData.metadata || {}
+                    }
+                });
+            }
+        } catch (error) {
+            console.warn(`⚠️ فشل الربط الذكي للعنصر ${item.id}:`, error.message || error);
+            // الاستمرار بدون إيقاف العملية
+        }
+    }
+    
+    return enhanced;
+}
     
     // 🔥 الجديد: تعزيز بالبيانات الوصفية الذكية
     enhanceWithSmartMetadata(results, queryAnalysis, intentAnalysis) {
@@ -2543,3 +2580,4 @@ window.vectorEngine = {
 
 console.log('✅ Vector Engine V5 - المحرك الدلالي الذكي المتطور جاهز!');
 console.log('🚀 ميزات V5: بحث متعدد المستويات + ذكاء اصطناعي + ربط ذكي + أداء فائق');
+
